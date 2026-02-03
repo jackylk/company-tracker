@@ -1,0 +1,139 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 用户表
+model User {
+  id           String         @id @default(uuid())
+  email        String         @unique
+  passwordHash String         @map("password_hash")
+  isAdmin      Boolean        @default(false) @map("is_admin")
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+  tasks        ResearchTask[]
+
+  @@map("users")
+}
+
+// 调研任务表
+model ResearchTask {
+  id           String       @id @default(uuid())
+  userId       String       @map("user_id")
+  companyName  String       @map("company_name")
+  focusPoints  String       @map("focus_points") @db.Text
+  currentStep  Int          @default(1) @map("current_step")
+  status       TaskStatus   @default(in_progress)
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dataSources  DataSource[]
+  articles     Article[]
+  reports      Report[]
+
+  @@map("research_tasks")
+}
+
+// 信息源表
+model DataSource {
+  id           String       @id @default(uuid())
+  taskId       String       @map("task_id")
+  name         String
+  url          String
+  type         SourceType
+  origin       SourceOrigin
+  category     String?
+  description  String?
+  selected     Boolean      @default(false)
+  createdAt    DateTime     @default(now()) @map("created_at")
+
+  task         ResearchTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  articles     Article[]
+
+  @@map("data_sources")
+}
+
+// 文章表
+model Article {
+  id           String            @id @default(uuid())
+  taskId       String            @map("task_id")
+  sourceId     String?           @map("source_id")
+  title        String
+  content      String            @db.Text
+  summary      String?           @db.Text
+  url          String
+  imageUrl     String?           @map("image_url")
+  publishDate  DateTime?         @map("publish_date")
+  sourceType   ArticleSourceType @map("source_type")
+  selected     Boolean           @default(false)
+  createdAt    DateTime          @default(now()) @map("created_at")
+
+  task         ResearchTask      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  dataSource   DataSource?       @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+
+  @@map("articles")
+}
+
+// 调研报告表
+model Report {
+  id           String       @id @default(uuid())
+  taskId       String       @map("task_id")
+  template     String       @db.Text
+  content      String       @db.Text
+  createdAt    DateTime     @default(now()) @map("created_at")
+
+  task         ResearchTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@map("reports")
+}
+
+// 内置信息源表（只读）
+model CuratedSource {
+  id          String   @id @default(uuid())
+  name        String   @map("source_name")
+  url         String   @map("source_url")
+  type        String   @map("source_type")
+  category    String
+  description String?
+  region      String?
+
+  @@map("curated_sources")
+}
+
+// 任务状态枚举
+enum TaskStatus {
+  in_progress
+  completed
+}
+
+// 信息源类型枚举
+enum SourceType {
+  rss
+  atom
+  feed
+  blog
+  news
+  website
+}
+
+// 信息源来源枚举
+enum SourceOrigin {
+  builtin
+  search
+  deepseek
+  manual
+}
+
+// 文章来源类型枚举
+enum ArticleSourceType {
+  datasource
+  search
+}
