@@ -21,6 +21,22 @@ interface RecommendedSource {
   description: string;
 }
 
+// 文章分析结果
+interface ArticleAnalysisResult {
+  index: number;
+  isRelevant: boolean;
+  category: string | null;
+  reason?: string;
+}
+
+// 流式回调类型
+export interface StreamCallbacks {
+  onPrompt?: (prompt: string) => void;
+  onToken?: (token: string) => void;
+  onComplete?: (fullContent: string) => void;
+  onError?: (error: Error) => void;
+}
+
 export class DeepseekService {
   private apiKey: string;
   private baseUrl: string;
@@ -56,6 +72,93 @@ export class DeepseekService {
       return response.data.choices[0]?.message?.content || '';
     } catch (error) {
       console.error('Deepseek API 调用失败:', error);
+      throw error;
+    }
+  }
+
+  // 流式聊天
+  async chatStream(
+    messages: DeepseekMessage[],
+    callbacks: StreamCallbacks,
+    temperature = 0.7
+  ): Promise<string> {
+    if (!this.apiKey) {
+      throw new Error('Deepseek API Key 未配置');
+    }
+
+    // 发送 prompt 信息
+    if (callbacks.onPrompt) {
+      const userMessage = messages.find(m => m.role === 'user');
+      if (userMessage) {
+        callbacks.onPrompt(userMessage.content);
+      }
+    }
+
+    try {
+      const response = await fetch(`${this.baseUrl}/v1/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'deepseek-chat',
+          messages,
+          temperature,
+          max_tokens: 4096,
+          stream: true,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let fullContent = '';
+
+      if (!reader) {
+        throw new Error('No response body');
+      }
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n').filter(line => line.trim() !== '');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') continue;
+
+            try {
+              const parsed = JSON.parse(data);
+              const content = parsed.choices?.[0]?.delta?.content;
+              if (content) {
+                fullContent += content;
+                if (callbacks.onToken) {
+                  callbacks.onToken(content);
+                }
+              }
+            } catch {
+              // 忽略解析错误
+            }
+          }
+        }
+      }
+
+      if (callbacks.onComplete) {
+        callbacks.onComplete(fullContent);
+      }
+
+      return fullContent;
+    } catch (error) {
+      if (callbacks.onError) {
+        callbacks.onError(error as Error);
+      }
       throw error;
     }
   }
@@ -195,7 +298,9 @@ ${currentSources.map((s) => `- ${s.name}: ${s.url}`).join('\n')}
 1. 结构清晰，逻辑严谨
 2. 引用来源文章的信息
 3. 突出用户关注的方面
-4. 提供有价值的分析和见解`;
+4. 提供有价值的分析和见解
+
+注意：不要在报告末尾添加参考文章列表，系统会自动添加。`;
 
     const articlesContent = articles
       .map(
@@ -228,11 +333,27 @@ ${articlesContent}
         0.7
       );
 
-      return response;
+      // 在报告末尾添加参考文章列表
+      const referencesSection = this.generateReferencesSection(articles);
+
+      return response + referencesSection;
     } catch (error) {
       console.error('生成报告失败:', error);
       throw error;
     }
+  }
+
+  // 生成参考文章列表章节
+  private generateReferencesSection(articles: Partial<Article>[]): string {
+    if (articles.length === 0) {
+      return '';
+    }
+
+    const references = articles
+      .map((a, i) => `${i + 1}. [${a.title}](${a.url})`)
+      .join('\n');
+
+    return `\n\n## 参考文章\n\n${references}\n`;
   }
 
   // 根据用户描述调整报告模板
@@ -258,6 +379,66 @@ ${currentTemplate}
       return currentTemplate;
     }
   }
+
+  // 批量分析文章相关性和分类
+  async analyzeArticles(
+    companyName: string,
+    focusPoints: string,
+    articlesText: string
+  ): Promise<ArticleAnalysisResult[]> {
+    const systemPrompt = `你是一个专业的文章分析助手。用户正在研究一个公司，有特定的关注点。你需要分析一批文章，判断每篇文章：
+1. 是否与该公司相关（语义层面的相关性，不仅仅是关键词匹配）
+2. 如果相关，属于哪个关注点分类
+
+判断相关性时要考虑：
+- 文章主题是否与该公司直接相关
+- 文章是否讨论了该公司的业务、产品、战略等
+- 即使没有直接提到公司名，但内容明显是关于该公司的也算相关
+- 仅仅提到公司名但主题无关的文章应标记为不相关
+
+分类时要考虑：
+- 根据文章的主要内容，归类到最匹配的关注点
+- 如果匹配多个关注点，选择最主要的一个
+- 如果不匹配任何关注点但与公司相关，分类为"其他"
+
+请以JSON数组格式返回分析结果：
+[
+  {"index": 0, "isRelevant": true, "category": "关注点名称", "reason": "简短原因"},
+  {"index": 1, "isRelevant": false, "category": null, "reason": "简短原因"}
+]
+
+只返回JSON数组，不要包含其他文字。`;
+
+    const userPrompt = `公司名称：${companyName}
+关注点：${focusPoints}
+
+请分析以下文章：
+
+${articlesText}`;
+
+    try {
+      const response = await this.chat(
+        [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        0.3 // 低温度以获得更一致的结果
+      );
+
+      // 解析JSON
+      const jsonMatch = response.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        const results = JSON.parse(jsonMatch[0]) as ArticleAnalysisResult[];
+        return results;
+      }
+
+      console.error('无法解析文章分析结果:', response);
+      return [];
+    } catch (error) {
+      console.error('文章分析失败:', error);
+      throw error;
+    }
+  }
 }
 
 export const deepseekService = new DeepseekService();
@@ -267,22 +448,40 @@ export const DEFAULT_REPORT_TEMPLATE = `# {公司名称} 调研报告
 
 ## 一、公司概述
 简要介绍公司背景、主营业务和市场定位。
+- 公司基本信息
+- 主营业务领域
+- 市场地位和竞争优势
 
 ## 二、{关注点}分析
 ### 2.1 现状分析
 分析公司在该领域的当前状态和主要动态。
+- 当前发展状况
+- 关键业务指标
+- 近期重要进展
 
 ### 2.2 策略解读
 解读公司在该领域的战略布局和发展方向。
+- 战略目标与规划
+- 资源投入情况
+- 合作与并购动态
 
 ### 2.3 竞争态势
 分析公司在该领域的竞争优势和挑战。
+- 主要竞争对手
+- 竞争优势分析
+- 面临的挑战与风险
 
 ## 三、近期动态
 汇总近期重要新闻和公告。
+- 重大新闻事件
+- 官方公告摘要
+- 行业影响分析
 
 ## 四、总结与展望
 对公司在关注领域的发展进行总结和展望。
+- 核心发现总结
+- 未来发展趋势
+- 投资/关注建议
 
 ---
 *报告生成日期：{日期}*

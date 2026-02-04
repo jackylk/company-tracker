@@ -7742,5 +7742,205 @@
     "category": "技术",
     "description": "谷歌研发博客的Feed源",
     "region": "国外"
+  },
+  {
+    "sourceName": "字节跳动官网",
+    "sourceUrl": "https://www.bytedance.com/",
+    "sourceType": "website",
+    "category": "字节跳动",
+    "description": "字节跳动官方网站新闻动态",
+    "region": "国内"
+  },
+  {
+    "sourceName": "TikTok Newsroom",
+    "sourceUrl": "https://newsroom.tiktok.com/",
+    "sourceType": "news",
+    "category": "字节跳动",
+    "description": "TikTok官方新闻中心（字节旗下）",
+    "region": "国外"
+  },
+  {
+    "sourceName": "CapCut Newsroom",
+    "sourceUrl": "https://newsroom.capcut.com/",
+    "sourceType": "news",
+    "category": "字节跳动",
+    "description": "CapCut官方新闻中心（字节旗下）",
+    "region": "国外"
+  },
+  {
+    "sourceName": "Lark Suite",
+    "sourceUrl": "https://www.larksuite.com/",
+    "sourceType": "website",
+    "category": "字节跳动",
+    "description": "Lark飞书国际版官网（字节旗下）",
+    "region": "国外"
+  },
+  {
+    "sourceName": "飞书官网",
+    "sourceUrl": "https://www.feishu.cn/",
+    "sourceType": "website",
+    "category": "字节跳动",
+    "description": "飞书官网新闻博客（字节旗下）",
+    "region": "国内"
+  },
+  {
+    "sourceName": "火山引擎",
+    "sourceUrl": "https://www.volcengine.com/",
+    "sourceType": "website",
+    "category": "字节跳动",
+    "description": "火山引擎官网博客（字节旗下云服务）",
+    "region": "国内"
+  },
+  {
+    "sourceName": "BytePlus Blog",
+    "sourceUrl": "https://www.byteplus.com/en/blog",
+    "sourceType": "blog",
+    "category": "字节跳动",
+    "description": "BytePlus官方博客（字节海外产品与解决方案）",
+    "region": "国外"
+  },
+  {
+    "sourceName": "字节跳动招聘",
+    "sourceUrl": "https://jobs.bytedance.com/",
+    "sourceType": "website",
+    "category": "字节跳动",
+    "description": "字节跳动招聘官网岗位更新",
+    "region": "国内"
+  },
+  {
+    "sourceName": "ByteDance GitHub",
+    "sourceUrl": "https://github.com/bytedance",
+    "sourceType": "website",
+    "category": "字节跳动",
+    "description": "字节跳动GitHub开源组织",
+    "region": "国外"
+  },
+  {
+    "sourceName": "Alizila 阿里巴巴官方新闻",
+    "sourceUrl": "https://www.alizila.com/",
+    "sourceType": "blog",
+    "category": "阿里巴巴",
+    "description": "阿里巴巴集团官方新闻站，提供公司发展、财报、高层演讲及行业洞察",
+    "region": "国外"
+  },
+  {
+    "sourceName": "Alizila RSS",
+    "sourceUrl": "https://www.alizila.com/feed/",
+    "sourceType": "rss",
+    "category": "阿里巴巴",
+    "description": "Alizila阿里巴巴官方新闻RSS订阅",
+    "region": "国外"
+  },
+  {
+    "sourceName": "Alibaba Tech Medium",
+    "sourceUrl": "https://medium.com/@alitech_2017",
+    "sourceType": "blog",
+    "category": "阿里巴巴",
+    "description": "阿里技术英文版博客，分享云计算、AI和开源项目进展",
+    "region": "国外"
+  },
+  {
+    "sourceName": "Alibaba GitHub",
+    "sourceUrl": "https://github.com/alibaba",
+    "sourceType": "website",
+    "category": "阿里巴巴",
+    "description": "阿里巴巴GitHub开源组织",
+    "region": "国外"
+  },
+  {
+    "sourceName": "阿里云国际站博客",
+    "sourceUrl": "https://www.alibabacloud.com/blog",
+    "sourceType": "blog",
+    "category": "阿里巴巴",
+    "description": "阿里云国际站技术博客，提供技术指南和产品发布信息",
+    "region": "国外"
+  },
+  {
+    "sourceName": "阿里云开发者社区",
+    "sourceUrl": "https://developer.aliyun.com/",
+    "sourceType": "website",
+    "category": "阿里巴巴",
+    "description": "阿里云中文开发者社区，技术文章和解决方案",
+    "region": "国内"
+  },
+  {
+    "sourceName": "阿里巴巴投资者关系",
+    "sourceUrl": "https://www.alibabagroup.com/en-US/ir-home",
+    "sourceType": "website",
+    "category": "阿里巴巴",
+    "description": "阿里巴巴投资者关系主页，财务报表和港股/美股动态",
+    "region": "国外"
+  },
+  {
+    "sourceName": "达摩院 DAMO Academy",
+    "sourceUrl": "https://damo.alibaba.com/",
+    "sourceType": "website",
+    "category": "阿里巴巴",
+    "description": "阿里巴巴高级研究机构，前沿科技趋势研究",
+    "region": "国内"
+  },
+  {
+    "sourceName": "腾讯新闻中心（中文）",
+    "sourceUrl": "https://www.tencent.com/zh-cn/media/news.html",
+    "sourceType": "website",
+    "category": "腾讯",
+    "description": "腾讯官方动态、公司级别重大公告和产品发布",
+    "region": "国内"
+  },
+  {
+    "sourceName": "Tencent Newsroom (English)",
+    "sourceUrl": "https://www.tencent.com/en-us/media/news.html",
+    "sourceType": "website",
+    "category": "腾讯",
+    "description": "腾讯官方新闻英文版，公司公告和产品发布",
+    "region": "国外"
+  },
+  {
+    "sourceName": "Tencent GitHub",
+    "sourceUrl": "https://github.com/Tencent",
+    "sourceType": "website",
+    "category": "腾讯",
+    "description": "腾讯GitHub开源组织",
+    "region": "国外"
+  },
+  {
+    "sourceName": "Tencent GitHub Atom Feed",
+    "sourceUrl": "https://github.com/Tencent.atom",
+    "sourceType": "atom",
+    "category": "腾讯",
+    "description": "腾讯GitHub开源项目发布订阅",
+    "region": "国外"
+  },
+  {
+    "sourceName": "腾讯 AI Lab",
+    "sourceUrl": "https://ai.tencent.com/ailab/",
+    "sourceType": "website",
+    "category": "腾讯",
+    "description": "腾讯人工智能实验室，AI前沿研究",
+    "region": "国内"
+  },
+  {
+    "sourceName": "腾讯投资者关系",
+    "sourceUrl": "https://www.tencent.com/zh-cn/investors.html",
+    "sourceType": "website",
+    "category": "腾讯",
+    "description": "腾讯投资者关系主页，财报和季度业绩",
+    "region": "国内"
+  },
+  {
+    "sourceName": "腾讯音乐 IR RSS",
+    "sourceUrl": "https://ir.tencentmusic.com/index.php?s=95&rsspage=43",
+    "sourceType": "rss",
+    "category": "腾讯",
+    "description": "腾讯音乐投资者关系RSS订阅",
+    "region": "国外"
+  },
+  {
+    "sourceName": "腾讯研究院",
+    "sourceUrl": "https://tisi.org/",
+    "sourceType": "website",
+    "category": "腾讯",
+    "description": "腾讯研究院，互联网法律、产业趋势和社会学研究",
+    "region": "国内"
   }
 ]

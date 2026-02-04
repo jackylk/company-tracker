@@ -16,12 +16,14 @@ import Step3Articles from './Step3Articles';
 import Step4Report from './Step4Report';
 
 const STEPS = ['添加公司', '确认信息源', '采集信息', '生成报告'];
+const TOTAL_STEPS = STEPS.length;
 
 export default function ResearchPage({ params }: { params: Promise<{ taskId: string }> }) {
   const { taskId } = use(params);
   const router = useRouter();
   const [task, setTask] = useState<TaskWithCounts | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hasReports, setHasReports] = useState(false);
   const { hide: hideProgress } = useProgressStore();
 
   useEffect(() => {
@@ -31,8 +33,12 @@ export default function ResearchPage({ params }: { params: Promise<{ taskId: str
 
   const loadTask = async () => {
     try {
-      const data = await api.getTask(taskId);
-      setTask(data);
+      const [taskData, reportsData] = await Promise.all([
+        api.getTask(taskId),
+        api.getReports(taskId),
+      ]);
+      setTask(taskData);
+      setHasReports(reportsData.length > 0);
     } catch (err) {
       console.error('加载任务失败:', err);
       router.push('/tasks');
@@ -45,15 +51,26 @@ export default function ResearchPage({ params }: { params: Promise<{ taskId: str
     setTask((prev) => (prev ? { ...prev, ...updates } : null));
   };
 
+  // 当报告生成完成时调用
+  const onReportGenerated = () => {
+    setHasReports(true);
+  };
+
   const goToStep = async (step: number) => {
     if (!task) return;
+    // 立即更新本地状态，让界面先切换
+    setTask((prev) => (prev ? { ...prev, currentStep: step } : null));
     try {
-      const updated = await api.updateTask(taskId, { currentStep: step });
-      setTask(updated);
+      // 后台同步到服务器
+      await api.updateTask(taskId, { currentStep: step });
     } catch (err) {
       console.error('更新步骤失败:', err);
     }
   };
+
+  // 计算已完成的步骤数
+  // 如果有报告，则所有步骤都已完成
+  const completedSteps = hasReports ? TOTAL_STEPS : task?.currentStep ? task.currentStep - 1 : 0;
 
   if (loading) {
     return (
@@ -98,6 +115,7 @@ export default function ResearchPage({ params }: { params: Promise<{ taskId: str
         <Stepper
           steps={STEPS}
           currentStep={task.currentStep}
+          completedSteps={completedSteps}
           onStepClick={goToStep}
         />
       </div>
@@ -108,13 +126,13 @@ export default function ResearchPage({ params }: { params: Promise<{ taskId: str
           <Step1Company task={task} onUpdate={updateTask} onNext={() => goToStep(2)} />
         )}
         {task.currentStep === 2 && (
-          <Step2Sources taskId={taskId} onNext={() => goToStep(3)} onBack={() => goToStep(1)} />
+          <Step2Sources taskId={taskId} task={task} onNext={() => goToStep(3)} onBack={() => goToStep(1)} />
         )}
         {task.currentStep === 3 && (
           <Step3Articles taskId={taskId} task={task} onNext={() => goToStep(4)} onBack={() => goToStep(2)} />
         )}
         {task.currentStep === 4 && (
-          <Step4Report taskId={taskId} task={task} onBack={() => goToStep(3)} />
+          <Step4Report taskId={taskId} task={task} onBack={() => goToStep(3)} onReportGenerated={onReportGenerated} />
         )}
       </div>
     </div>

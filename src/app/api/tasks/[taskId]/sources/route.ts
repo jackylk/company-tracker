@@ -28,7 +28,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const sources = await prisma.dataSource.findMany({
       where: { taskId },
-      orderBy: [{ selected: 'desc' }, { createdAt: 'desc' }],
+      orderBy: { createdAt: 'desc' },
     });
 
     return apiSuccess(sources);
@@ -72,10 +72,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       data: { selected },
     });
 
-    // 返回更新后的列表
+    // 返回更新后的列表 - 保持原有顺序，不按selected排序，避免表格跳动
     const sources = await prisma.dataSource.findMany({
       where: { taskId },
-      orderBy: [{ selected: 'desc' }, { createdAt: 'desc' }],
+      orderBy: { createdAt: 'desc' },
     });
 
     return apiSuccess(sources);

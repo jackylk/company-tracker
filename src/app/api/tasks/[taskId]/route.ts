@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import prisma from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
 import { apiSuccess, apiError } from '@/lib/utils';
+import { companyValidationService } from '@/services/validation/CompanyValidationService';
 import type { UpdateTaskRequest, TaskWithCounts } from '@/types';
 
 interface RouteParams {
@@ -79,6 +80,11 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (companyName !== undefined) {
       if (companyName.trim().length === 0) {
         return apiError('公司名称不能为空', 400);
+      }
+      // 验证公司名称是否真实存在
+      const validationResult = await companyValidationService.validateCompany(companyName);
+      if (!validationResult.isValid) {
+        return apiError(validationResult.message, 400);
       }
       updateData.companyName = companyName.trim();
     }

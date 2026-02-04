@@ -40,6 +40,7 @@ export interface TaskWithCounts extends ResearchTask {
 // 信息源相关类型
 export type SourceType = 'rss' | 'atom' | 'feed' | 'blog' | 'news' | 'website';
 export type SourceOrigin = 'builtin' | 'search' | 'deepseek' | 'manual';
+export type CollectionStatus = 'unknown' | 'success' | 'failed' | 'slow';
 
 export interface DataSource {
   id: string;
@@ -51,6 +52,8 @@ export interface DataSource {
   category?: string | null;
   description?: string | null;
   selected: boolean;
+  collectionStatus: CollectionStatus;
+  lastCollectionError?: string | null;
   createdAt: Date;
 }
 

@@ -1,19 +1,24 @@
 interface StepperProps {
   steps: string[];
   currentStep: number;
+  completedSteps?: number; // 已完成的步骤数，默认等于 currentStep - 1
   onStepClick?: (step: number) => void;
 }
 
-export function Stepper({ steps, currentStep, onStepClick }: StepperProps) {
+export function Stepper({ steps, currentStep, completedSteps, onStepClick }: StepperProps) {
+  // 如果没有指定 completedSteps，则已完成的步骤数为 currentStep - 1
+  const actualCompletedSteps = completedSteps ?? currentStep - 1;
+
   return (
     <div className="w-full">
       {/* 桌面视图 */}
       <div className="hidden sm:flex items-center justify-between">
         {steps.map((step, index) => {
           const stepNumber = index + 1;
-          const isCompleted = stepNumber < currentStep;
+          const isCompleted = stepNumber <= actualCompletedSteps;
           const isCurrent = stepNumber === currentStep;
-          const isClickable = onStepClick && stepNumber <= currentStep;
+          // 允许点击已完成的步骤或当前步骤
+          const isClickable = onStepClick && (stepNumber <= actualCompletedSteps || stepNumber === currentStep);
 
           return (
             <div key={step} className="flex items-center flex-1">
@@ -47,7 +52,7 @@ export function Stepper({ steps, currentStep, onStepClick }: StepperProps) {
                 <span
                   className={`
                     mt-2 text-sm font-medium
-                    ${isCurrent ? 'text-blue-400' : isCompleted ? 'text-slate-300' : 'text-slate-500'}
+                    ${isCurrent ? 'text-blue-400' : isCompleted ? 'text-green-400' : 'text-slate-500'}
                   `}
                 >
                   {step}
@@ -59,7 +64,7 @@ export function Stepper({ steps, currentStep, onStepClick }: StepperProps) {
                 <div className="flex-1 h-0.5 mx-2 mt-[-24px]">
                   <div
                     className={`h-full transition-all duration-500 ${
-                      stepNumber < currentStep ? 'bg-green-600' : 'bg-slate-700'
+                      stepNumber <= actualCompletedSteps ? 'bg-green-600' : 'bg-slate-700'
                     }`}
                   />
                 </div>
@@ -79,8 +84,8 @@ export function Stepper({ steps, currentStep, onStepClick }: StepperProps) {
         </div>
         <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
           <div
-            className="h-full bg-blue-600 transition-all duration-300"
-            style={{ width: `${(currentStep / steps.length) * 100}%` }}
+            className="h-full bg-green-600 transition-all duration-300"
+            style={{ width: `${(Math.max(actualCompletedSteps, currentStep) / steps.length) * 100}%` }}
           />
         </div>
       </div>

@@ -4,7 +4,6 @@ import { ReactNode, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/useAuthStore';
-import { GlobalProgress } from '@/components/layout/GlobalProgress';
 import { Button } from '@/components/ui/Button';
 
 export default function MainLayout({ children }: { children: ReactNode }) {
@@ -76,9 +75,6 @@ export default function MainLayout({ children }: { children: ReactNode }) {
 
       {/* 主内容 */}
       <main className="flex-1 pb-16">{children}</main>
-
-      {/* 全局进度栏 */}
-      <GlobalProgress />
     </div>
   );
 }

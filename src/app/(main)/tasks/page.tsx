@@ -3,10 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Textarea } from '@/components/ui/Textarea';
 import { Card, CardContent } from '@/components/ui/Card';
-import { Modal } from '@/components/ui/Modal';
 import { api } from '@/lib/api';
 import { timeAgo, getStepName } from '@/lib/utils';
 import type { TaskWithCounts } from '@/types';
@@ -17,11 +14,7 @@ export default function TasksPage() {
   const router = useRouter();
   const [tasks, setTasks] = useState<TaskWithCounts[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [companyName, setCompanyName] = useState('');
-  const [focusPoints, setFocusPoints] = useState('');
   const [creating, setCreating] = useState(false);
-  const [error, setError] = useState('');
 
   const inProgressCount = tasks.filter((t) => t.status === 'in_progress').length;
 
@@ -40,21 +33,15 @@ export default function TasksPage() {
     }
   };
 
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
+  const handleCreate = async () => {
     setCreating(true);
-
     try {
-      const task = await api.createTask(companyName, focusPoints);
-      setTasks([task, ...tasks]);
-      setShowModal(false);
-      setCompanyName('');
-      setFocusPoints('');
+      // 创建一个空任务，让用户在第一步填写
+      const task = await api.createTask('', '');
       router.push(`/research/${task.id}`);
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      setError(error.response?.data?.message || '创建失败');
+      alert(error.response?.data?.message || '创建失败');
     } finally {
       setCreating(false);
     }
@@ -90,8 +77,9 @@ export default function TasksPage() {
           </p>
         </div>
         <Button
-          onClick={() => setShowModal(true)}
+          onClick={handleCreate}
           disabled={inProgressCount >= MAX_TASKS}
+          loading={creating}
         >
           <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -109,13 +97,18 @@ export default function TasksPage() {
             </svg>
           </div>
           <h3 className="text-lg font-medium text-slate-300 mb-2">还没有调研任务</h3>
-          <p className="text-slate-500 mb-6">点击上方按钮创建您的第一个调研任务</p>
-          <Button onClick={() => setShowModal(true)}>创建调研任务</Button>
+          <p className="text-slate-500 mb-6">点击下方按钮创建您的第一个调研任务</p>
+          <Button onClick={handleCreate} loading={creating}>创建调研任务</Button>
         </div>
       ) : (
         <div className="space-y-4">
           {tasks.map((task) => (
-            <Card key={task.id} hover>
+            <Card
+              key={task.id}
+              hover
+              className="cursor-pointer"
+              onClick={() => router.push(`/research/${task.id}`)}
+            >
               <CardContent className="p-5">
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                   <div className="flex-1 min-w-0">
@@ -169,13 +162,6 @@ export default function TasksPage() {
                   {/* 操作按钮 */}
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <Button
-                      variant={task.status === 'completed' ? 'secondary' : 'primary'}
-                      size="sm"
-                      onClick={() => router.push(`/research/${task.id}`)}
-                    >
-                      {task.status === 'completed' ? '查看报告' : '继续'}
-                    </Button>
-                    <Button
                       variant="ghost"
                       size="sm"
                       onClick={(e) => {
@@ -194,43 +180,6 @@ export default function TasksPage() {
           ))}
         </div>
       )}
-
-      {/* 新建任务模态框 */}
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="新建调研任务">
-        <form onSubmit={handleCreate} className="space-y-5">
-          <Input
-            label="公司名称"
-            value={companyName}
-            onChange={(e) => setCompanyName(e.target.value)}
-            placeholder="例如：字节跳动、阿里巴巴"
-            required
-          />
-
-          <Textarea
-            label="关注点"
-            value={focusPoints}
-            onChange={(e) => setFocusPoints(e.target.value)}
-            placeholder="您想了解这个公司的哪些方面？例如：AI战略布局、海外市场拓展"
-            rows={3}
-            required
-          />
-
-          {error && (
-            <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-sm text-red-400">
-              {error}
-            </div>
-          )}
-
-          <div className="flex justify-end gap-3 pt-2">
-            <Button type="button" variant="secondary" onClick={() => setShowModal(false)}>
-              取消
-            </Button>
-            <Button type="submit" loading={creating}>
-              创建任务
-            </Button>
-          </div>
-        </form>
-      </Modal>
     </div>
   );
 }

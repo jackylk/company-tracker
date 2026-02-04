@@ -44,21 +44,31 @@ model ResearchTask {
 
 // 信息源表
 model DataSource {
-  id           String       @id @default(uuid())
-  taskId       String       @map("task_id")
-  name         String
-  url          String
-  type         SourceType
-  origin       SourceOrigin
-  category     String?
-  description  String?
-  selected     Boolean      @default(false)
-  createdAt    DateTime     @default(now()) @map("created_at")
+  id                   String            @id @default(uuid())
+  taskId               String            @map("task_id")
+  name                 String
+  url                  String
+  type                 SourceType
+  origin               SourceOrigin
+  category             String?
+  description          String?
+  selected             Boolean           @default(false)
+  collectionStatus     CollectionStatus  @default(unknown) @map("collection_status")
+  lastCollectionError  String?           @map("last_collection_error")
+  createdAt            DateTime          @default(now()) @map("created_at")
 
   task         ResearchTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
   articles     Article[]
 
   @@map("data_sources")
+}
+
+// 信息源采集状态枚举
+enum CollectionStatus {
+  unknown  // 未知（从未采集过）
+  success  // 上次采集成功
+  failed   // 上次采集失败
+  slow     // 上次采集很慢
 }
 
 // 文章表
@@ -73,6 +83,7 @@ model Article {
   imageUrl     String?           @map("image_url")
   publishDate  DateTime?         @map("publish_date")
   sourceType   ArticleSourceType @map("source_type")
+  category     String?           // 文章分类（对应用户的关注点）
   selected     Boolean           @default(false)
   createdAt    DateTime          @default(now()) @map("created_at")
 

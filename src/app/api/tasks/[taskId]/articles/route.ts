@@ -45,7 +45,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     // 获取总数
     const total = await prisma.article.count({ where });
 
-    // 获取文章列表
+    // 获取文章列表，按日期从近到远排序
     const articles = await prisma.article.findMany({
       where,
       include: {
@@ -53,7 +53,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           select: { name: true },
         },
       },
-      orderBy: [{ selected: 'desc' }, { publishDate: 'desc' }, { createdAt: 'desc' }],
+      orderBy: [
+        { publishDate: 'desc' },
+        { createdAt: 'desc' },
+      ],
       skip: (page - 1) * pageSize,
       take: pageSize,
     });
