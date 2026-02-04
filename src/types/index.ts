@@ -1,7 +1,8 @@
 // 用户相关类型
 export interface User {
   id: string;
-  email: string;
+  username: string;
+  email?: string | null;
   isAdmin: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -9,7 +10,7 @@ export interface User {
 
 export interface JWTPayload {
   userId: string;
-  email: string;
+  username: string;
   isAdmin: boolean;
   exp?: number;
   iat?: number;
@@ -96,12 +97,12 @@ export interface Report {
 
 // API请求/响应类型
 export interface RegisterRequest {
-  email: string;
+  username: string;
   password: string;
 }
 
 export interface LoginRequest {
-  email: string;
+  username: string;
   password: string;
 }
 

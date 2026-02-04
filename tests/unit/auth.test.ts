@@ -83,27 +83,17 @@ describe('Auth Utils', () => {
   });
 
   describe('Password Validation', () => {
-    it('should accept valid passwords', () => {
-      const result = isValidPassword('password123');
-      expect(result.valid).toBe(true);
+    it('should accept any non-empty passwords', () => {
+      expect(isValidPassword('password123').valid).toBe(true);
+      expect(isValidPassword('123456').valid).toBe(true);
+      expect(isValidPassword('abc').valid).toBe(true);
+      expect(isValidPassword('1').valid).toBe(true);
     });
 
-    it('should reject short passwords', () => {
-      const result = isValidPassword('pass1');
+    it('should reject empty passwords', () => {
+      const result = isValidPassword('');
       expect(result.valid).toBe(false);
-      expect(result.message).toContain('8');
-    });
-
-    it('should reject passwords without letters', () => {
-      const result = isValidPassword('12345678');
-      expect(result.valid).toBe(false);
-      expect(result.message).toContain('字母');
-    });
-
-    it('should reject passwords without numbers', () => {
-      const result = isValidPassword('password');
-      expect(result.valid).toBe(false);
-      expect(result.message).toContain('数字');
+      expect(result.message).toContain('不能为空');
     });
   });
 

@@ -64,7 +64,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
                   </Button>
                 </Link>
               )}
-              <span className="text-sm text-slate-400 hidden sm:block">{user?.email}</span>
+              <span className="text-sm text-slate-400 hidden sm:block">{user?.username}</span>
               <Button variant="outline" size="sm" onClick={handleLogout}>
                 退出
               </Button>

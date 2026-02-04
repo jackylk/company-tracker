@@ -342,7 +342,8 @@ export default function Step3Articles({ taskId, task, onNext, onBack }: Step3Pro
               </h3>
             </div>
             <div className="border border-slate-700 rounded-lg overflow-hidden">
-              <div className="overflow-x-auto">
+              {/* 桌面端表格视图 */}
+              <div className="hidden sm:block overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
                 <table className="w-full text-sm">
                   <thead className="bg-slate-800/50">
                     <tr>
@@ -425,6 +426,58 @@ export default function Step3Articles({ taskId, task, onNext, onBack }: Step3Pro
                         ))}
                   </tbody>
                 </table>
+              </div>
+
+              {/* 移动端卡片视图 */}
+              <div className="sm:hidden divide-y divide-slate-700/50">
+                {paused
+                  ? articles.slice(0, 20).map((article) => (
+                      <div
+                        key={article.id}
+                        className={`p-4 ${!article.selected ? 'opacity-50' : ''}`}
+                      >
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <span
+                            className={`text-sm font-medium flex-1 ${
+                              article.selected
+                                ? 'text-slate-200'
+                                : 'text-slate-500 line-through'
+                            }`}
+                          >
+                            {article.title}
+                          </span>
+                          <span
+                            className={`px-2 py-0.5 text-xs rounded-full whitespace-nowrap ${
+                              article.selected
+                                ? 'bg-green-600/20 text-green-400'
+                                : 'bg-slate-600/20 text-slate-500'
+                            }`}
+                          >
+                            {article.selected ? '相关' : '不相关'}
+                          </span>
+                        </div>
+                        <div className="text-xs text-slate-400 space-y-1">
+                          <div>来源: {getDomain(article.url)}</div>
+                          <div>日期: {article.publishDate ? formatDate(article.publishDate) : '-'}</div>
+                        </div>
+                      </div>
+                    ))
+                  : collectingArticles.slice(-20).map((article, index) => (
+                      <div key={index} className="p-4 animate-fadeIn">
+                        <a
+                          href={article.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-medium text-slate-200 block mb-2"
+                        >
+                          {article.title}
+                        </a>
+                        <div className="text-xs text-slate-400 space-y-1">
+                          <div>来源: {article.sourceName}</div>
+                          <div>日期: {article.publishDate ? formatDate(article.publishDate) : '-'}</div>
+                        </div>
+                      </div>
+                    ))}
               </div>
               {(paused ? articles.length : collectingArticles.length) > 20 && (
                 <div className="px-4 py-2 bg-slate-800/30 text-center text-xs text-slate-500">
@@ -582,7 +635,8 @@ export default function Step3Articles({ taskId, task, onNext, onBack }: Step3Pro
           </div>
 
           <div className="border border-slate-700 rounded-lg overflow-hidden">
-            <div className="overflow-x-auto">
+            {/* 桌面端表格视图 */}
+            <div className="hidden sm:block overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
               <table className="w-full text-sm">
                 <thead className="bg-slate-800/50">
                   <tr>
@@ -636,6 +690,42 @@ export default function Step3Articles({ taskId, task, onNext, onBack }: Step3Pro
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* 移动端卡片视图 */}
+            <div className="sm:hidden divide-y divide-slate-700/50">
+              {articles.map((article) => (
+                <div
+                  key={article.id}
+                  className={`p-4 ${!article.selected ? 'opacity-50' : ''}`}
+                  onClick={() => viewArticle(article.id)}
+                >
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <span
+                      className={`text-sm font-medium flex-1 ${
+                        article.selected
+                          ? 'text-slate-200'
+                          : 'text-slate-500 line-through'
+                      }`}
+                    >
+                      {article.title}
+                    </span>
+                    <span
+                      className={`px-2 py-0.5 text-xs rounded-full whitespace-nowrap ${
+                        article.selected
+                          ? 'bg-green-600/20 text-green-400'
+                          : 'bg-slate-600/20 text-slate-500'
+                      }`}
+                    >
+                      {article.selected ? '相关' : '不相关'}
+                    </span>
+                  </div>
+                  <div className="text-xs text-slate-400 space-y-1">
+                    <div>来源: {getDomain(article.url)}</div>
+                    <div>日期: {article.publishDate ? formatDate(article.publishDate) : '-'}</div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>

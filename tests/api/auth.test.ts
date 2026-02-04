@@ -82,23 +82,25 @@ describe('Auth API', () => {
       expect(data.message).toContain('邮箱');
     });
 
-    it('应该拒绝过短的密码', async () => {
+    it('应该接受简单密码', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(null);
+      mockPrisma.user.create.mockResolvedValue(mockUser);
+
       const request = createMockRequest({
         email: 'test@example.com',
-        password: 'pass1',
+        password: '123',
       });
 
       const response = await registerHandler(request);
-      const { status, data } = await parseResponse(response);
+      const { status } = await parseResponse(response);
 
-      expect(status).toBe(400);
-      expect(data.error).toBe('BAD_REQUEST');
+      expect(status).toBe(201);
     });
 
-    it('应该拒绝没有数字的密码', async () => {
+    it('应该拒绝空密码', async () => {
       const request = createMockRequest({
         email: 'test@example.com',
-        password: 'password',
+        password: '',
       });
 
       const response = await registerHandler(request);
@@ -106,21 +108,7 @@ describe('Auth API', () => {
 
       expect(status).toBe(400);
       expect(data.error).toBe('BAD_REQUEST');
-      expect(data.message).toContain('数字');
-    });
-
-    it('应该拒绝没有字母的密码', async () => {
-      const request = createMockRequest({
-        email: 'test@example.com',
-        password: '12345678',
-      });
-
-      const response = await registerHandler(request);
-      const { status, data } = await parseResponse(response);
-
-      expect(status).toBe(400);
-      expect(data.error).toBe('BAD_REQUEST');
-      expect(data.message).toContain('字母');
+      expect(data.message).toContain('不能为空');
     });
 
     it('应该拒绝重复注册的邮箱', async () => {

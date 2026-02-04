@@ -11,7 +11,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 export default function LoginPage() {
   const router = useRouter();
   const { setAuth } = useAuthStore();
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -22,7 +22,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const data = await api.login(email, password);
+      const data = await api.login(username, password);
       setAuth(data.user, data.token);
       router.push('/tasks');
     } catch (err: unknown) {
@@ -51,12 +51,13 @@ export default function LoginPage() {
         <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
             <Input
-              label="邮箱"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="请输入邮箱"
+              label="用户名"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="请输入用户名"
               required
+              autoComplete="username"
             />
 
             <Input
@@ -66,6 +67,7 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="请输入密码"
               required
+              autoComplete="current-password"
             />
 
             {error && (

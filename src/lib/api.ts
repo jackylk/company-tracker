@@ -36,13 +36,13 @@ class ApiClient {
   }
 
   // 认证API
-  async register(email: string, password: string) {
-    const { data } = await this.client.post('/auth/register', { email, password });
+  async register(username: string, password: string) {
+    const { data } = await this.client.post('/auth/register', { username, password });
     return data;
   }
 
-  async login(email: string, password: string) {
-    const { data } = await this.client.post('/auth/login', { email, password });
+  async login(username: string, password: string) {
+    const { data } = await this.client.post('/auth/login', { username, password });
     return data;
   }
 

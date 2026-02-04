@@ -71,10 +71,16 @@ export async function getCurrentUser(request?: Request): Promise<JWTPayload | nu
   return verifyToken(token);
 }
 
-// 检查是否为管理员邮箱
-export function isAdminEmail(email: string): boolean {
-  const adminEmails = process.env.ADMIN_EMAILS?.split(',').map((e) => e.trim().toLowerCase()) || [];
-  return adminEmails.includes(email.toLowerCase());
+// 检查是否为管理员用户名
+export function isAdminUsername(username: string): boolean {
+  const adminUsernames = process.env.ADMIN_USERNAMES?.split(',').map((u) => u.trim().toLowerCase()) || ['admin'];
+  return adminUsernames.includes(username.toLowerCase());
+}
+
+// 验证用户名格式（3-20个字符，字母、数字、下划线）
+export function isValidUsername(username: string): boolean {
+  const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
+  return usernameRegex.test(username);
 }
 
 // 验证邮箱格式
@@ -85,14 +91,8 @@ export function isValidEmail(email: string): boolean {
 
 // 验证密码强度
 export function isValidPassword(password: string): { valid: boolean; message?: string } {
-  if (password.length < 8) {
-    return { valid: false, message: '密码长度至少8位' };
-  }
-  if (!/[a-zA-Z]/.test(password)) {
-    return { valid: false, message: '密码必须包含字母' };
-  }
-  if (!/\d/.test(password)) {
-    return { valid: false, message: '密码必须包含数字' };
+  if (password.length < 1) {
+    return { valid: false, message: '密码不能为空' };
   }
   return { valid: true };
 }

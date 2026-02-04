@@ -2,7 +2,6 @@ import { NextRequest } from 'next/server';
 import prisma from '@/lib/db';
 import {
   verifyPassword,
-  isValidEmail,
   generateToken,
 } from '@/lib/auth';
 import { apiSuccess, apiError } from '@/lib/utils';
@@ -11,11 +10,11 @@ import type { LoginRequest, AuthResponse } from '@/types';
 export async function POST(request: NextRequest) {
   try {
     const body: LoginRequest = await request.json();
-    const { email, password } = body;
+    const { username, password } = body;
 
     // 验证输入
-    if (!email || !isValidEmail(email)) {
-      return apiError('请输入有效的邮箱地址', 400);
+    if (!username || username.length < 3) {
+      return apiError('请输入有效的用户名', 400);
     }
 
     if (!password) {
@@ -24,29 +23,30 @@ export async function POST(request: NextRequest) {
 
     // 查找用户
     const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
+      where: { username: username.toLowerCase() },
     });
 
     if (!user) {
-      return apiError('邮箱或密码错误', 401);
+      return apiError('用户名或密码错误', 401);
     }
 
     // 验证密码
     const isValid = await verifyPassword(password, user.passwordHash);
     if (!isValid) {
-      return apiError('邮箱或密码错误', 401);
+      return apiError('用户名或密码错误', 401);
     }
 
     // 生成Token
     const token = generateToken({
       userId: user.id,
-      email: user.email,
+      username: user.username,
       isAdmin: user.isAdmin,
     });
 
     const response: AuthResponse = {
       user: {
         id: user.id,
+        username: user.username,
         email: user.email,
         isAdmin: user.isAdmin,
         createdAt: user.createdAt,

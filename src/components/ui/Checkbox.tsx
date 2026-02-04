@@ -10,12 +10,12 @@ export function Checkbox({ checked, onChange, label, disabled, className = '' }:
   return (
     <label
       className={`
-        inline-flex items-center gap-2 cursor-pointer
+        inline-flex items-center gap-2 cursor-pointer p-2 -m-2 min-h-[44px]
         ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
         ${className}
       `}
     >
-      <div className="relative">
+      <div className="relative flex-shrink-0">
         <input
           type="checkbox"
           checked={checked}
@@ -25,7 +25,7 @@ export function Checkbox({ checked, onChange, label, disabled, className = '' }:
         />
         <div
           className={`
-            w-5 h-5 rounded border-2 transition-all duration-200
+            w-6 h-6 rounded border-2 transition-all duration-200
             flex items-center justify-center
             ${checked
               ? 'bg-blue-600 border-blue-600'
@@ -34,13 +34,13 @@ export function Checkbox({ checked, onChange, label, disabled, className = '' }:
           `}
         >
           {checked && (
-            <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
             </svg>
           )}
         </div>
       </div>
-      {label && <span className="text-sm text-slate-300">{label}</span>}
+      {label && <span className="text-base sm:text-sm text-slate-300">{label}</span>}
     </label>
   );
 }

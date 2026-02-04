@@ -11,7 +11,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 export default function RegisterPage() {
   const router = useRouter();
   const { setAuth } = useAuthStore();
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
@@ -26,15 +26,15 @@ export default function RegisterPage() {
       return;
     }
 
-    if (password.length < 8) {
-      setError('密码长度至少8位');
+    if (password.length < 1) {
+      setError('密码不能为空');
       return;
     }
 
     setLoading(true);
 
     try {
-      const data = await api.register(email, password);
+      const data = await api.register(username, password);
       setAuth(data.user, data.token);
       router.push('/tasks');
     } catch (err: unknown) {
@@ -63,12 +63,13 @@ export default function RegisterPage() {
         <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
             <Input
-              label="邮箱"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="请输入邮箱"
+              label="用户名"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="3-20个字符，字母、数字或下划线"
               required
+              autoComplete="username"
             />
 
             <Input
@@ -76,8 +77,9 @@ export default function RegisterPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="至少8位，包含字母和数字"
+              placeholder="请输入密码"
               required
+              autoComplete="new-password"
             />
 
             <Input
@@ -87,6 +89,7 @@ export default function RegisterPage() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="请再次输入密码"
               required
+              autoComplete="new-password"
             />
 
             {error && (
