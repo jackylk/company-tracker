@@ -116,6 +116,22 @@ body {
   padding-left: 1.25rem;
 }
 
+.markdown-content ul {
+  list-style-type: disc;
+}
+
+.markdown-content ol {
+  list-style-type: decimal;
+}
+
+.markdown-content ul ul {
+  list-style-type: circle;
+}
+
+.markdown-content ul ul ul {
+  list-style-type: square;
+}
+
 @media (min-width: 640px) {
   .markdown-content ul,
   .markdown-content ol {
@@ -126,6 +142,7 @@ body {
 .markdown-content li {
   margin-bottom: 0.5rem;
   color: #cbd5e1;
+  display: list-item;
 }
 
 .markdown-content a {
