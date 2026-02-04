@@ -37,6 +37,7 @@ export default function Step3Articles({ taskId, task, onNext, onBack }: Step3Pro
   const [collectingArticles, setCollectingArticles] = useState<CollectingArticle[]>([]);
   const [loading, setLoading] = useState(true);
   const [collecting, setCollecting] = useState(false);
+  const [syncing, setSyncing] = useState(false); // 正在同步数据状态
   const [paused, setPaused] = useState(false);
   const [currentStage, setCurrentStage] = useState('');
   const [logs, setLogs] = useState<string[]>([]);
@@ -185,9 +186,12 @@ export default function Step3Articles({ taskId, task, onNext, onBack }: Step3Pro
       }
     } finally {
       setCollecting(false);
+      // 显示同步状态，防止短暂显示"无文章"
+      setSyncing(true);
       // 无论成功还是失败，都从数据库重新加载文章
       // 这确保了即使流式传输中 complete 事件丢失，也能正确显示已保存的文章
       await reloadArticles();
+      setSyncing(false);
     }
   };
 
@@ -567,6 +571,77 @@ export default function Step3Articles({ taskId, task, onNext, onBack }: Step3Pro
     return (
       <div className="flex items-center justify-center py-12">
         <div className="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // 同步数据中，显示加载状态并保持文章表格
+  if (syncing) {
+    return (
+      <div className="space-y-6">
+        {/* 提示信息 */}
+        <div className="flex items-start gap-3 p-4 bg-purple-500/10 border border-purple-500/30 rounded-lg">
+          <div className="w-5 h-5 border-2 border-purple-400 border-t-transparent rounded-full animate-spin flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-purple-200">
+            <p className="font-medium mb-1">正在同步数据...</p>
+            <p className="text-purple-300/80">
+              AI正在分析文章相关性，筛选与「{task.companyName}」和「{task.focusPoints}」相关的内容
+            </p>
+          </div>
+        </div>
+
+        {/* 保持显示已采集的文章 */}
+        {collectingArticles.length > 0 && (
+          <div className="space-y-3">
+            <h3 className="text-sm font-medium text-slate-300">
+              已采集 {collectingArticles.length} 篇文章，正在验证相关性...
+            </h3>
+            <div className="border border-slate-700 rounded-lg overflow-hidden opacity-70">
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-800/50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-slate-400 font-medium">标题</th>
+                      <th className="px-4 py-3 text-left text-slate-400 font-medium w-28">日期</th>
+                      <th className="px-4 py-3 text-left text-slate-400 font-medium w-32">来源</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-700/50">
+                    {collectingArticles.slice(-20).map((article, index) => (
+                      <tr key={index} className="hover:bg-slate-800/30 transition-colors">
+                        <td className="px-4 py-3">
+                          <span className="text-slate-200 line-clamp-1">{article.title}</span>
+                        </td>
+                        <td className="px-4 py-3 text-slate-400 whitespace-nowrap">
+                          {article.publishDate ? formatDate(article.publishDate) : '-'}
+                        </td>
+                        <td className="px-4 py-3 text-slate-400 truncate max-w-[128px]">
+                          {article.sourceName}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="sm:hidden divide-y divide-slate-700/50">
+                {collectingArticles.slice(-20).map((article, index) => (
+                  <div key={index} className="p-4">
+                    <span className="text-sm font-medium text-slate-200 block mb-2">{article.title}</span>
+                    <div className="text-xs text-slate-400 space-y-1">
+                      <div>来源: {article.sourceName}</div>
+                      <div>日期: {article.publishDate ? formatDate(article.publishDate) : '-'}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {collectingArticles.length > 20 && (
+                <div className="px-4 py-2 bg-slate-800/30 text-center text-xs text-slate-500">
+                  显示最新 20 条，共 {collectingArticles.length} 条
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     );
   }
