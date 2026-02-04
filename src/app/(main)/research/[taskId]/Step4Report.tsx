@@ -29,6 +29,7 @@ export default function Step4Report({ taskId, task, onBack, onReportGenerated }:
   const [showTemplate, setShowTemplate] = useState(true);
   const [streamContent, setStreamContent] = useState('');
   const [currentStage, setCurrentStage] = useState('');
+  const [articleInfo, setArticleInfo] = useState<{ count: number; dateRange: string } | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
   const contentContainerRef = useRef<HTMLDivElement>(null);
   const userScrolledRef = useRef(false);
@@ -107,6 +108,7 @@ export default function Step4Report({ taskId, task, onBack, onReportGenerated }:
     setStreamContent('');
     setLogs([]);
     setCurrentStage('');
+    setArticleInfo(null);
     userScrolledRef.current = false; // 重置滚动状态
 
     try {
@@ -144,6 +146,13 @@ export default function Step4Report({ taskId, task, onBack, onReportGenerated }:
             switch (type) {
               case 'stage':
                 setCurrentStage(data.message);
+                // 保存文章信息
+                if (data.articleCount !== undefined) {
+                  setArticleInfo({
+                    count: data.articleCount,
+                    dateRange: data.dateRange || '日期未知',
+                  });
+                }
                 break;
               case 'log':
                 setLogs((prev) => [...prev, data.message]);
@@ -220,10 +229,16 @@ export default function Step4Report({ taskId, task, onBack, onReportGenerated }:
       {generating && (
         <div className="space-y-4">
           {/* 进度提示 */}
-          <div className="flex items-center gap-3 p-4 bg-purple-500/10 border border-purple-500/30 rounded-lg">
-            <div className="w-5 h-5 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
+          <div className="flex items-start gap-3 p-4 bg-purple-500/10 border border-purple-500/30 rounded-lg">
+            <div className="w-5 h-5 border-2 border-purple-400 border-t-transparent rounded-full animate-spin flex-shrink-0 mt-0.5" />
             <div className="text-sm text-purple-200">
               <p className="font-medium">{currentStage || '正在生成报告...'}</p>
+              {articleInfo && (
+                <div className="mt-1 text-purple-300/80 space-y-0.5">
+                  <p>正在基于 <span className="text-purple-200 font-medium">{articleInfo.count}</span> 篇相关文章生成报告</p>
+                  <p>文章发布日期范围：<span className="text-purple-200">{articleInfo.dateRange}</span></p>
+                </div>
+              )}
             </div>
           </div>
 

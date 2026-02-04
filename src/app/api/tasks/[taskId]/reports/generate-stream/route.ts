@@ -70,8 +70,31 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           return;
         }
 
-        send('stage', { stage: 'prepare', message: '正在准备文章数据...' });
+        // 计算文章日期范围
+        const articlesWithDate = selectedArticles.filter(a => a.publishDate);
+        let dateRange = '';
+        if (articlesWithDate.length > 0) {
+          const dates = articlesWithDate.map(a => new Date(a.publishDate!).getTime());
+          const minDate = new Date(Math.min(...dates));
+          const maxDate = new Date(Math.max(...dates));
+          const formatDate = (d: Date) => d.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' });
+          if (minDate.getTime() === maxDate.getTime()) {
+            dateRange = formatDate(minDate);
+          } else {
+            dateRange = `${formatDate(minDate)} ~ ${formatDate(maxDate)}`;
+          }
+        }
+
+        send('stage', {
+          stage: 'prepare',
+          message: '正在准备文章数据...',
+          articleCount: selectedArticles.length,
+          dateRange: dateRange || '日期未知',
+        });
         send('log', { message: `共有 ${selectedArticles.length} 篇相关文章` });
+        if (dateRange) {
+          send('log', { message: `文章发布日期范围: ${dateRange}` });
+        }
 
         // 构建 prompt
         const systemPrompt = `你是一个专业的调研报告撰写助手。用户会提供一些关于某个公司的文章内容，你需要根据这些内容和用户的关注点生成一份调研报告。
@@ -106,7 +129,12 @@ ${articlesContent}
 
 请根据以上信息生成调研报告。`;
 
-        send('stage', { stage: 'generate', message: '正在生成报告...' });
+        send('stage', {
+          stage: 'generate',
+          message: '正在生成报告...',
+          articleCount: selectedArticles.length,
+          dateRange: dateRange || '日期未知',
+        });
         send('log', { message: '正在调用 AI 生成报告内容...' });
 
         // 调用 Deepseek 流式 API
