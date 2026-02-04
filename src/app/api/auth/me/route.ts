@@ -23,6 +23,7 @@ export async function GET(request: NextRequest) {
 
     const userData: User = {
       id: user.id,
+      username: user.username,
       email: user.email,
       isAdmin: user.isAdmin,
       createdAt: user.createdAt,
