@@ -25,25 +25,6 @@ interface RawArticle {
   publishDate: Date | null;
 }
 
-// 简单关键词过滤
-function isRelevantByKeywords(
-  title: string,
-  summary: string,
-  companyName: string,
-  focusPoints: string
-): boolean {
-  const text = `${title} ${summary}`.toLowerCase();
-
-  // 构建关键词列表
-  const keywords = [
-    companyName.toLowerCase(),
-    ...focusPoints.toLowerCase().split(/[,，、\s]+/).filter(k => k.length > 1),
-  ];
-
-  // 只要匹配任意一个关键词就认为相关
-  return keywords.some(keyword => text.includes(keyword));
-}
-
 // 带超时的采集
 async function crawlWithTimeout(
   type: SourceType,
@@ -192,46 +173,16 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         }
 
         send('progress', { progress: 60 });
-        send('log', { message: `共采集到 ${rawArticles.length} 篇原始文章，开始关键词过滤...` });
-
-        // 3. 使用关键词简单过滤，标记相关性
-        send('stage', { stage: 'filter', message: '正在过滤无关文章...' });
-        send('filter_start', { totalCount: rawArticles.length });
-
-        const articlesToSave: Array<RawArticle & { isRelevant: boolean }> = [];
-        let relevantCount = 0;
-        let filteredCount = 0;
-
-        for (const article of rawArticles) {
-          const isRelevant = isRelevantByKeywords(
-            article.title,
-            article.summary,
-            task.companyName,
-            task.focusPoints
-          );
-          articlesToSave.push({ ...article, isRelevant });
-          if (isRelevant) {
-            relevantCount++;
-          } else {
-            filteredCount++;
-          }
-        }
-
-        send('log', { message: `关键词过滤完成：${relevantCount} 篇相关，${filteredCount} 篇不相关` });
-        send('filter_complete', {
-          totalCount: rawArticles.length,
-          relevantCount,
-          filteredCount,
-        });
+        send('log', { message: `共采集到 ${rawArticles.length} 篇文章` });
 
         send('progress', { progress: 80 });
 
-        // 4. 批量保存所有文章（用 selected 字段标记是否相关）
+        // 3. 批量保存所有文章（全部标记为选中，让生成报告时AI判断相关性）
         send('stage', { stage: 'save', message: '正在保存文章...' });
 
-        if (articlesToSave.length > 0) {
+        if (rawArticles.length > 0) {
           await prisma.article.createMany({
-            data: articlesToSave.map((a) => ({
+            data: rawArticles.map((a) => ({
               taskId: a.taskId,
               sourceId: a.sourceId,
               title: a.title,
@@ -240,19 +191,19 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
               url: a.url,
               imageUrl: a.imageUrl,
               publishDate: a.publishDate,
-              sourceType: 'datasource', // 所有文章都来自信息源
-              selected: a.isRelevant, // 相关的文章标记为选中
+              sourceType: 'datasource',
+              selected: true, // 所有文章都标记为选中，由AI在生成报告时判断相关性
             })),
           });
         }
 
-        // 5. 更新任务步骤
+        // 4. 更新任务步骤
         await prisma.researchTask.update({
           where: { id: taskId },
           data: { currentStep: 3 },
         });
 
-        // 6. 获取保存后的文章（带ID），按日期降序排列
+        // 5. 获取保存后的文章（带ID），按日期降序排列
         const savedArticles = await prisma.article.findMany({
           where: { taskId },
           orderBy: [
@@ -263,15 +214,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
         send('progress', { progress: 100 });
 
-        // 7. 发送完成事件
+        // 6. 发送完成事件
         send('complete', {
-          message: `采集完成，共 ${articlesToSave.length} 篇文章，其中 ${relevantCount} 篇相关`,
-          stats: {
-            total: articlesToSave.length,
-            relevant: relevantCount,
-            filtered: filteredCount,
-            fromSources: articlesToSave.length,
-          },
+          message: `采集完成，共 ${rawArticles.length} 篇文章`,
           articles: savedArticles,
         });
 
