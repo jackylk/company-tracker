@@ -72,6 +72,21 @@ export async function POST(request: NextRequest) {
     return apiSuccess(response, 201);
   } catch (error) {
     console.error('注册失败:', error);
-    return apiError('注册失败，请稍后重试', 500);
+
+    // 返回更详细的错误信息用于调试
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorName = error instanceof Error ? error.name : 'UnknownError';
+
+    // 检查是否是数据库连接错误
+    if (errorMessage.includes('connect') || errorMessage.includes('ECONNREFUSED') || errorMessage.includes('timeout')) {
+      return apiError(`数据库连接失败: ${errorMessage}`, 500);
+    }
+
+    // 检查是否是表不存在错误（需要运行迁移）
+    if (errorMessage.includes('does not exist') || errorMessage.includes('relation') || errorMessage.includes('table')) {
+      return apiError(`数据库表不存在，请运行数据库迁移: ${errorMessage}`, 500);
+    }
+
+    return apiError(`注册失败 [${errorName}]: ${errorMessage}`, 500);
   }
 }
