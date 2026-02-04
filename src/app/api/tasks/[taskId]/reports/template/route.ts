@@ -8,7 +8,7 @@ interface RouteParams {
   params: Promise<{ taskId: string }>;
 }
 
-// 获取默认模板
+// 获取或生成模板
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { taskId } = await params;
@@ -26,12 +26,33 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return apiError('任务不存在', 404);
     }
 
-    // 替换模板中的占位符
-    const template = DEFAULT_REPORT_TEMPLATE
-      .replace('{公司名称}', task.companyName)
-      .replace('{关注点}', task.focusPoints)
-      .replace('{日期}', new Date().toLocaleDateString('zh-CN'))
-      .replace('{来源数量}', '0');
+    // 检查URL参数是否请求AI生成
+    const url = new URL(request.url);
+    const useAI = url.searchParams.get('ai') === 'true';
+
+    let template: string;
+
+    if (useAI) {
+      // 使用AI根据公司名和关注点动态生成模板
+      try {
+        template = await deepseekService.generateTemplate(task.companyName, task.focusPoints);
+      } catch (error) {
+        console.error('AI生成模板失败，使用默认模板:', error);
+        // 降级到默认模板
+        template = DEFAULT_REPORT_TEMPLATE
+          .replace('{公司名称}', task.companyName)
+          .replace('{关注点}', task.focusPoints)
+          .replace('{日期}', new Date().toLocaleDateString('zh-CN'))
+          .replace('{来源数量}', '0');
+      }
+    } else {
+      // 使用默认静态模板
+      template = DEFAULT_REPORT_TEMPLATE
+        .replace('{公司名称}', task.companyName)
+        .replace('{关注点}', task.focusPoints)
+        .replace('{日期}', new Date().toLocaleDateString('zh-CN'))
+        .replace('{来源数量}', '0');
+    }
 
     return apiSuccess({ template });
   } catch (error) {

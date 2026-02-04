@@ -25,6 +25,7 @@ export default function Step4Report({ taskId, task, onBack, onReportGenerated }:
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [adjusting, setAdjusting] = useState(false);
+  const [generatingTemplate, setGeneratingTemplate] = useState(false);
   const [showTemplate, setShowTemplate] = useState(true);
   const [streamContent, setStreamContent] = useState('');
   const [currentStage, setCurrentStage] = useState('');
@@ -54,10 +55,10 @@ export default function Step4Report({ taskId, task, onBack, onReportGenerated }:
     userScrolledRef.current = !isAtBottom;
   };
 
-  const loadData = async () => {
+  const loadData = async (useAI = false) => {
     try {
       const [templateData, reportsData] = await Promise.all([
-        api.getReportTemplate(taskId),
+        api.getReportTemplate(taskId, useAI),
         api.getReports(taskId),
       ]);
       setTemplate(templateData.template);
@@ -69,6 +70,20 @@ export default function Step4Report({ taskId, task, onBack, onReportGenerated }:
       console.error('加载失败:', err);
     } finally {
       setLoading(false);
+      setGeneratingTemplate(false);
+    }
+  };
+
+  // AI智能生成模板
+  const handleGenerateAITemplate = async () => {
+    setGeneratingTemplate(true);
+    try {
+      const templateData = await api.getReportTemplate(taskId, true);
+      setTemplate(templateData.template);
+    } catch (err) {
+      console.error('AI生成模板失败:', err);
+    } finally {
+      setGeneratingTemplate(false);
     }
   };
 
@@ -272,12 +287,43 @@ export default function Step4Report({ taskId, task, onBack, onReportGenerated }:
           {showTemplate ? (
             /* 模板编辑区域 */
             <div className="space-y-4">
+              {/* AI生成模板提示 */}
+              {generatingTemplate && (
+                <div className="flex items-center gap-3 p-4 bg-purple-500/10 border border-purple-500/30 rounded-lg">
+                  <div className="w-5 h-5 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
+                  <div className="text-sm text-purple-200">
+                    <p className="font-medium">正在根据「{task.companyName}」和「{task.focusPoints}」智能生成报告模板...</p>
+                    <p className="text-purple-300/70 text-xs mt-1">AI正在分析公司特点和关注点，生成定制化模板</p>
+                  </div>
+                </div>
+              )}
+
+              {/* AI生成按钮 */}
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleGenerateAITemplate}
+                  loading={generatingTemplate}
+                  disabled={generatingTemplate}
+                  className="w-full sm:w-auto"
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  AI智能生成模板
+                </Button>
+                <span className="text-xs text-slate-500 self-center">
+                  根据公司名和关注点定制专属模板
+                </span>
+              </div>
+
               <Textarea
                 label="报告模板"
                 value={template}
                 onChange={(e) => setTemplate(e.target.value)}
                 rows={12}
                 className="font-mono text-sm"
+                disabled={generatingTemplate}
               />
 
               {/* AI调整 */}

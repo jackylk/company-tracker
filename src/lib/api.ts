@@ -135,8 +135,9 @@ class ApiClient {
     return data;
   }
 
-  async getReportTemplate(taskId: string) {
-    const { data } = await this.client.get(`/tasks/${taskId}/reports/template`);
+  async getReportTemplate(taskId: string, useAI = false) {
+    const params = useAI ? { ai: 'true' } : {};
+    const { data } = await this.client.get(`/tasks/${taskId}/reports/template`, { params });
     return data;
   }
 

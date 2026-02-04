@@ -356,6 +356,47 @@ ${articlesContent}
     return `\n\n## 参考文章\n\n${references}\n`;
   }
 
+  // 根据公司名和关注点动态生成报告模板
+  async generateTemplate(companyName: string, focusPoints: string): Promise<string> {
+    const systemPrompt = `你是一个专业的调研报告模板设计师。用户会告诉你一个公司名称和关注点，你需要为这个公司生成一个定制化的调研报告模板。
+
+模板要求：
+1. 使用Markdown格式
+2. 结构清晰，层次分明
+3. 根据公司特点和行业背景设计合适的章节
+4. 根据用户的关注点重点突出相关内容
+5. 每个章节下要有具体的内容提示
+6. 模板应该专业但易于填充
+
+模板应包含：
+- 一级标题使用 #
+- 二级标题使用 ##
+- 三级标题使用 ###
+- 每个章节下的内容提示用列表形式
+
+只返回Markdown格式的模板，不要包含其他说明文字。`;
+
+    const userPrompt = `公司名称：${companyName}
+关注点：${focusPoints}
+
+请为这个公司设计一个专业的调研报告模板，要根据公司的业务特点和用户的关注点进行定制化设计。`;
+
+    try {
+      const template = await this.chat([
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ], 0.8);
+
+      // 在模板末尾添加日期和来源信息占位符
+      const footer = `\n\n---\n*报告生成日期：${new Date().toLocaleDateString('zh-CN')}*\n*数据来源：{来源数量}篇参考文章*\n`;
+
+      return template + footer;
+    } catch (error) {
+      console.error('生成模板失败:', error);
+      throw error;
+    }
+  }
+
   // 根据用户描述调整报告模板
   async adjustTemplate(currentTemplate: string, userRequest: string): Promise<string> {
     const systemPrompt = `你是一个报告模板调整助手。用户会告诉你当前的报告模板和想要的调整，你需要生成调整后的模板。
