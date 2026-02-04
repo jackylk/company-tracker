@@ -131,14 +131,21 @@ export default function Step4Report({ taskId, task, onBack, onReportGenerated }:
         throw new Error('无响应数据');
       }
 
+      let buffer = '';
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n').filter((line) => line.startsWith('data: '));
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+
+        // 保留最后一行（可能不完整）
+        buffer = lines.pop() || '';
 
         for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+
           try {
             const json = JSON.parse(line.slice(6));
             const { type, data } = json;
@@ -161,6 +168,7 @@ export default function Step4Report({ taskId, task, onBack, onReportGenerated }:
                 setStreamContent((prev) => prev + data.token);
                 break;
               case 'complete':
+                // 更新报告列表并切换到查看视图
                 setReports((prev) => [data.report, ...prev]);
                 setShowTemplate(false);
                 setLogs((prev) => [...prev, data.message]);
@@ -388,46 +396,55 @@ export default function Step4Report({ taskId, task, onBack, onReportGenerated }:
           ) : (
             /* 报告列表 */
             <div className="space-y-4">
-              {reports.map((report) => (
-                <Card key={report.id} className="p-5">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div>
-                      <h4 className="font-medium text-slate-100">
-                        {task.companyName} 调研报告
-                      </h4>
-                      <p className="text-sm text-slate-400">
-                        生成于 {new Date(report.createdAt).toLocaleString('zh-CN')}
-                      </p>
+              {reports.length === 0 ? (
+                <div className="text-center py-8 text-slate-400">
+                  <p>暂无报告，请先生成报告</p>
+                  <Button className="mt-4" onClick={() => setShowTemplate(true)}>
+                    返回编辑模板
+                  </Button>
+                </div>
+              ) : (
+                reports.map((report) => (
+                  <Card key={report.id} className="p-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                      <div>
+                        <h4 className="font-medium text-slate-100">
+                          {task.companyName} 调研报告
+                        </h4>
+                        <p className="text-sm text-slate-400">
+                          生成于 {new Date(report.createdAt).toLocaleString('zh-CN')}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => viewReport(report.id)}
+                        >
+                          查看
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDownload(report.id)}
+                        >
+                          下载
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => viewReport(report.id)}
-                      >
-                        查看
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDownload(report.id)}
-                      >
-                        下载
-                      </Button>
-                    </div>
-                  </div>
 
-                  {/* 预览 */}
-                  <div className="mt-4 p-4 bg-slate-800/50 rounded-lg max-h-40 overflow-hidden relative">
-                    <div className="markdown-content text-sm">
-                      <ReactMarkdown>
-                        {report.content.substring(0, 500) + '...'}
-                      </ReactMarkdown>
+                    {/* 预览 */}
+                    <div className="mt-4 p-4 bg-slate-800/50 rounded-lg max-h-40 overflow-hidden relative">
+                      <div className="markdown-content text-sm">
+                        <ReactMarkdown>
+                          {report.content.substring(0, 500) + '...'}
+                        </ReactMarkdown>
+                      </div>
+                      <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-slate-800/90 to-transparent" />
                     </div>
-                    <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-slate-800/90 to-transparent" />
-                  </div>
-                </Card>
-              ))}
+                  </Card>
+                ))
+              )}
             </div>
           )}
         </>
