@@ -4,8 +4,9 @@ import {
   generateToken,
   verifyToken,
   isValidEmail,
+  isValidUsername,
   isValidPassword,
-  isAdminEmail,
+  isAdminUsername,
 } from '@/lib/auth';
 
 describe('Auth Utils', () => {
@@ -39,7 +40,7 @@ describe('Auth Utils', () => {
   describe('JWT Token', () => {
     const payload = {
       userId: 'test-user-id',
-      email: 'test@test.com',
+      username: 'testuser',
       isAdmin: false,
     };
 
@@ -57,7 +58,7 @@ describe('Auth Utils', () => {
 
       expect(verified).toBeDefined();
       expect(verified?.userId).toBe(payload.userId);
-      expect(verified?.email).toBe(payload.email);
+      expect(verified?.username).toBe(payload.username);
       expect(verified?.isAdmin).toBe(payload.isAdmin);
     });
 
@@ -98,13 +99,28 @@ describe('Auth Utils', () => {
   });
 
   describe('Admin Email Check', () => {
-    it('should identify admin email', () => {
-      expect(isAdminEmail('admin@test.com')).toBe(true);
-      expect(isAdminEmail('ADMIN@TEST.COM')).toBe(true);
+    it('should identify admin username', () => {
+      expect(isAdminUsername('admin')).toBe(true);
+      expect(isAdminUsername('ADMIN')).toBe(true);
     });
 
-    it('should reject non-admin email', () => {
-      expect(isAdminEmail('user@test.com')).toBe(false);
+    it('should reject non-admin username', () => {
+      expect(isAdminUsername('user')).toBe(false);
+    });
+  });
+
+  describe('Username Validation', () => {
+    it('should accept valid usernames', () => {
+      expect(isValidUsername('user123')).toBe(true);
+      expect(isValidUsername('test_user')).toBe(true);
+      expect(isValidUsername('abc')).toBe(true);
+    });
+
+    it('should reject invalid usernames', () => {
+      expect(isValidUsername('ab')).toBe(false); // too short
+      expect(isValidUsername('a'.repeat(21))).toBe(false); // too long
+      expect(isValidUsername('user@name')).toBe(false); // special char
+      expect(isValidUsername('user name')).toBe(false); // space
     });
   });
 });

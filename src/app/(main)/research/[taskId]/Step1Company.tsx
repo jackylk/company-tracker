@@ -123,13 +123,13 @@ export default function Step1Company({ task, onUpdate, onNext }: Step1Props) {
       </div>
 
       {/* 操作按钮 */}
-      <div className="flex justify-end gap-3 pt-4 border-t border-slate-700">
+      <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4 border-t border-slate-700">
         {!isDraft && (
-          <Button variant="secondary" onClick={handleSave} loading={saving}>
+          <Button variant="secondary" onClick={handleSave} loading={saving} className="w-full sm:w-auto">
             保存修改
           </Button>
         )}
-        <Button onClick={handleNext}>
+        <Button onClick={handleNext} className="w-full sm:w-auto">
           下一步：发现信息源
           <svg className="w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

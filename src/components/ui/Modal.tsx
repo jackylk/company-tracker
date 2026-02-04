@@ -39,7 +39,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       {/* 背景遮罩 */}
       <div
         className="absolute inset-0 bg-black/70 backdrop-blur-sm"
@@ -49,18 +49,23 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
       {/* 模态框 */}
       <div
         className={`
-          relative w-full ${sizes[size]} bg-slate-800 border border-slate-700 rounded-xl
-          shadow-2xl transform transition-all duration-200
-          max-h-[90vh] overflow-hidden flex flex-col
+          relative w-full ${sizes[size]} bg-slate-800 border border-slate-700
+          rounded-t-2xl sm:rounded-xl shadow-2xl transform transition-all duration-200
+          max-h-[85vh] sm:max-h-[90vh] overflow-hidden flex flex-col
         `}
       >
+        {/* 移动端拖动指示条 */}
+        <div className="sm:hidden flex justify-center pt-2 pb-1">
+          <div className="w-10 h-1 bg-slate-600 rounded-full" />
+        </div>
+
         {/* 标题栏 */}
         {title && (
-          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700">
-            <h2 className="text-lg font-semibold text-slate-100">{title}</h2>
+          <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-700">
+            <h2 className="text-base sm:text-lg font-semibold text-slate-100 truncate pr-2">{title}</h2>
             <button
               onClick={onClose}
-              className="p-1 text-slate-400 hover:text-slate-200 transition-colors"
+              className="p-2 -m-1 text-slate-400 hover:text-slate-200 transition-colors rounded-lg hover:bg-slate-700/50"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -70,7 +75,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
         )}
 
         {/* 内容 */}
-        <div className="flex-1 overflow-y-auto p-6">{children}</div>
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">{children}</div>
       </div>
     </div>,
     document.body

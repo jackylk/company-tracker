@@ -76,17 +76,39 @@ export function Stepper({ steps, currentStep, completedSteps, onStepClick }: Ste
 
       {/* 移动端视图 */}
       <div className="sm:hidden">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm text-slate-400">
+        <div className="flex items-center justify-between mb-2 gap-2">
+          <span className="text-sm text-slate-400 whitespace-nowrap">
             步骤 {currentStep}/{steps.length}
           </span>
-          <span className="text-sm font-medium text-blue-400">{steps[currentStep - 1]}</span>
+          <span className="text-sm font-medium text-blue-400 truncate text-right">
+            {steps[currentStep - 1]}
+          </span>
         </div>
-        <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
+        <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
           <div
-            className="h-full bg-green-600 transition-all duration-300"
+            className="h-full bg-gradient-to-r from-green-600 to-blue-500 transition-all duration-300"
             style={{ width: `${(Math.max(actualCompletedSteps, currentStep) / steps.length) * 100}%` }}
           />
+        </div>
+        {/* 移动端步骤指示点 */}
+        <div className="flex justify-between mt-2 px-1">
+          {steps.map((_, index) => {
+            const stepNumber = index + 1;
+            const isCompleted = stepNumber <= actualCompletedSteps;
+            const isCurrent = stepNumber === currentStep;
+            return (
+              <div
+                key={index}
+                className={`w-2 h-2 rounded-full transition-all ${
+                  isCompleted
+                    ? 'bg-green-500'
+                    : isCurrent
+                    ? 'bg-blue-500'
+                    : 'bg-slate-600'
+                }`}
+              />
+            );
+          })}
         </div>
       </div>
     </div>

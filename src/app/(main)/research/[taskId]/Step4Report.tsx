@@ -281,11 +281,11 @@ export default function Step4Report({ taskId, task, onBack, onReportGenerated }:
               />
 
               {/* AI调整 */}
-              <div className="flex gap-2 items-stretch">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <Input
                   value={adjustRequest}
                   onChange={(e) => setAdjustRequest(e.target.value)}
-                  placeholder="告诉AI如何调整模板，例如：增加竞品分析章节"
+                  placeholder="告诉AI如何调整模板"
                   className="flex-1"
                 />
                 <Button
@@ -293,7 +293,7 @@ export default function Step4Report({ taskId, task, onBack, onReportGenerated }:
                   onClick={handleAdjustTemplate}
                   loading={adjusting}
                   disabled={!adjustRequest.trim()}
-                  className="whitespace-nowrap"
+                  className="whitespace-nowrap w-full sm:w-auto"
                 >
                   调整模板
                 </Button>
@@ -373,8 +373,8 @@ export default function Step4Report({ taskId, task, onBack, onReportGenerated }:
       )}
 
       {/* 操作按钮 */}
-      <div className="flex justify-between gap-3 pt-4 border-t border-slate-700">
-        <Button variant="secondary" onClick={onBack} disabled={generating}>
+      <div className="flex flex-col-reverse sm:flex-row sm:justify-between gap-3 pt-4 border-t border-slate-700">
+        <Button variant="secondary" onClick={onBack} disabled={generating} className="w-full sm:w-auto">
           <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path
               strokeLinecap="round"
@@ -385,7 +385,7 @@ export default function Step4Report({ taskId, task, onBack, onReportGenerated }:
           </svg>
           上一步
         </Button>
-        <Button variant="secondary" onClick={() => router.push('/tasks')} disabled={generating}>
+        <Button variant="secondary" onClick={() => router.push('/tasks')} disabled={generating} className="w-full sm:w-auto">
           返回任务列表
         </Button>
       </div>

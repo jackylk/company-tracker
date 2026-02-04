@@ -6,7 +6,8 @@ import { NextRequest } from 'next/server';
 // Mock Prisma
 const mockUser = {
   id: 'test-user-id',
-  email: 'test@example.com',
+  username: 'testuser',
+  email: null,
   passwordHash: '',
   isAdmin: false,
   createdAt: new Date(),
@@ -54,7 +55,7 @@ describe('Auth API', () => {
       mockPrisma.user.create.mockResolvedValue(mockUser);
 
       const request = createMockRequest({
-        email: 'newuser@example.com',
+        username: 'newuser',
         password: 'password123',
       });
 
@@ -63,14 +64,14 @@ describe('Auth API', () => {
 
       expect(status).toBe(201);
       expect(data.user).toBeDefined();
-      expect(data.user.email).toBe(mockUser.email);
+      expect(data.user.username).toBe(mockUser.username);
       expect(data.token).toBeDefined();
       expect(typeof data.token).toBe('string');
     });
 
-    it('应该拒绝无效的邮箱格式', async () => {
+    it('应该拒绝无效的用户名格式', async () => {
       const request = createMockRequest({
-        email: 'invalid-email',
+        username: 'ab',
         password: 'password123',
       });
 
@@ -79,7 +80,6 @@ describe('Auth API', () => {
 
       expect(status).toBe(400);
       expect(data.error).toBe('BAD_REQUEST');
-      expect(data.message).toContain('邮箱');
     });
 
     it('应该接受简单密码', async () => {
@@ -87,7 +87,7 @@ describe('Auth API', () => {
       mockPrisma.user.create.mockResolvedValue(mockUser);
 
       const request = createMockRequest({
-        email: 'test@example.com',
+        username: 'testuser',
         password: '123',
       });
 
@@ -99,7 +99,7 @@ describe('Auth API', () => {
 
     it('应该拒绝空密码', async () => {
       const request = createMockRequest({
-        email: 'test@example.com',
+        username: 'testuser',
         password: '',
       });
 
@@ -111,11 +111,11 @@ describe('Auth API', () => {
       expect(data.message).toContain('不能为空');
     });
 
-    it('应该拒绝重复注册的邮箱', async () => {
+    it('应该拒绝重复注册的用户名', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(mockUser);
 
       const request = createMockRequest({
-        email: 'test@example.com',
+        username: 'testuser',
         password: 'password123',
       });
 
@@ -124,19 +124,19 @@ describe('Auth API', () => {
 
       expect(status).toBe(409);
       expect(data.error).toBe('CONFLICT');
-      expect(data.message).toContain('已被注册');
+      expect(data.message).toContain('已被使用');
     });
 
-    it('管理员邮箱应该获得管理员权限', async () => {
+    it('管理员用户名应该获得管理员权限', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(null);
       mockPrisma.user.create.mockImplementation(async (args) => ({
         ...mockUser,
-        email: args.data.email,
+        username: args.data.username,
         isAdmin: args.data.isAdmin,
       }));
 
       const request = createMockRequest({
-        email: 'admin@test.com', // 在 setup.ts 中配置的管理员邮箱
+        username: 'admin',
         password: 'password123',
       });
 
@@ -151,12 +151,12 @@ describe('Auth API', () => {
       mockPrisma.user.findUnique.mockResolvedValue(null);
       mockPrisma.user.create.mockImplementation(async (args) => ({
         ...mockUser,
-        email: args.data.email,
+        username: args.data.username,
         isAdmin: args.data.isAdmin,
       }));
 
       const request = createMockRequest({
-        email: 'user@example.com',
+        username: 'regularuser',
         password: 'password123',
       });
 
@@ -179,7 +179,7 @@ describe('Auth API', () => {
       });
 
       const request = createMockRequest({
-        email: 'test@example.com',
+        username: 'testuser',
         password,
       });
 
@@ -188,13 +188,13 @@ describe('Auth API', () => {
 
       expect(status).toBe(200);
       expect(data.user).toBeDefined();
-      expect(data.user.email).toBe(mockUser.email);
+      expect(data.user.username).toBe(mockUser.username);
       expect(data.token).toBeDefined();
     });
 
-    it('应该拒绝无效的邮箱格式', async () => {
+    it('应该拒绝无效的用户名', async () => {
       const request = createMockRequest({
-        email: 'invalid-email',
+        username: 'ab',
         password: 'password123',
       });
 
@@ -207,7 +207,7 @@ describe('Auth API', () => {
 
     it('应该拒绝空密码', async () => {
       const request = createMockRequest({
-        email: 'test@example.com',
+        username: 'testuser',
         password: '',
       });
 
@@ -223,7 +223,7 @@ describe('Auth API', () => {
       mockPrisma.user.findUnique.mockResolvedValue(null);
 
       const request = createMockRequest({
-        email: 'nonexistent@example.com',
+        username: 'nonexistent',
         password: 'password123',
       });
 
@@ -245,7 +245,7 @@ describe('Auth API', () => {
       });
 
       const request = createMockRequest({
-        email: 'test@example.com',
+        username: 'testuser',
         password: 'wrongpassword123',
       });
 
@@ -267,7 +267,7 @@ describe('Auth API', () => {
       });
 
       const request = createMockRequest({
-        email: 'test@example.com',
+        username: 'testuser',
         password,
       });
 
@@ -279,21 +279,21 @@ describe('Auth API', () => {
 
       expect(payload).toBeDefined();
       expect(payload?.userId).toBe(mockUser.id);
-      expect(payload?.email).toBe(mockUser.email);
+      expect(payload?.username).toBe(mockUser.username);
     });
 
-    it('邮箱应该不区分大小写', async () => {
+    it('用户名应该不区分大小写', async () => {
       const password = 'password123';
       const hash = await hashPassword(password);
 
       mockPrisma.user.findUnique.mockResolvedValue({
         ...mockUser,
-        email: 'test@example.com',
+        username: 'testuser',
         passwordHash: hash,
       });
 
       const request = createMockRequest({
-        email: 'TEST@EXAMPLE.COM',
+        username: 'TESTUSER',
         password,
       });
 
@@ -301,16 +301,16 @@ describe('Auth API', () => {
       const { status } = await parseResponse(response);
 
       expect(status).toBe(200);
-      // 验证 findUnique 被调用时使用了小写邮箱
+      // 验证 findUnique 被调用时使用了小写用户名
       expect(mockPrisma.user.findUnique).toHaveBeenCalledWith({
-        where: { email: 'test@example.com' },
+        where: { username: 'testuser' },
       });
     });
   });
 
   describe('注册后登录流程', () => {
     it('注册后应该能够使用相同密码登录', async () => {
-      const email = 'newuser@example.com';
+      const username = 'newuser';
       const password = 'password123';
       let savedHash = '';
 
@@ -320,13 +320,13 @@ describe('Auth API', () => {
         savedHash = args.data.passwordHash;
         return {
           ...mockUser,
-          email: args.data.email,
+          username: args.data.username,
           passwordHash: savedHash,
         };
       });
 
       // 注册
-      const registerRequest = createMockRequest({ email, password });
+      const registerRequest = createMockRequest({ username, password });
       const registerResponse = await registerHandler(registerRequest);
       const registerResult = await parseResponse(registerResponse);
 
@@ -335,17 +335,17 @@ describe('Auth API', () => {
       // Mock 登录
       mockPrisma.user.findUnique.mockResolvedValueOnce({
         ...mockUser,
-        email,
+        username,
         passwordHash: savedHash,
       });
 
       // 登录
-      const loginRequest = createMockRequest({ email, password });
+      const loginRequest = createMockRequest({ username, password });
       const loginResponse = await loginHandler(loginRequest);
       const loginResult = await parseResponse(loginResponse);
 
       expect(loginResult.status).toBe(200);
-      expect(loginResult.data.user.email).toBe(email);
+      expect(loginResult.data.user.username).toBe(username);
     });
   });
 });

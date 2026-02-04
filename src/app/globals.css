@@ -10,11 +10,19 @@
   --color-foreground: var(--foreground);
 }
 
+/* 防止整个页面水平滚动 */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   min-height: 100vh;
+  /* iOS安全区域 */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
 /* 自定义滚动条 */
@@ -36,28 +44,64 @@ body {
   background: #64748b;
 }
 
+/* 移动端触摸优化 */
+@media (hover: none) and (pointer: coarse) {
+  /* 确保触摸目标足够大 */
+  button, a, [role="button"] {
+    min-height: 44px;
+  }
+
+  /* 禁用hover效果减少延迟 */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* 滚动条在移动端隐藏 */
+  ::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 /* Markdown渲染样式 */
 .markdown-content h1 {
-  font-size: 1.875rem;
+  font-size: 1.5rem;
   font-weight: 700;
   margin-bottom: 1rem;
   color: #f1f5f9;
 }
 
+@media (min-width: 640px) {
+  .markdown-content h1 {
+    font-size: 1.875rem;
+  }
+}
+
 .markdown-content h2 {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 600;
   margin-top: 1.5rem;
   margin-bottom: 0.75rem;
   color: #f1f5f9;
 }
 
+@media (min-width: 640px) {
+  .markdown-content h2 {
+    font-size: 1.5rem;
+  }
+}
+
 .markdown-content h3 {
-  font-size: 1.25rem;
+  font-size: 1.125rem;
   font-weight: 600;
   margin-top: 1.25rem;
   margin-bottom: 0.5rem;
   color: #e2e8f0;
+}
+
+@media (min-width: 640px) {
+  .markdown-content h3 {
+    font-size: 1.25rem;
+  }
 }
 
 .markdown-content p {
@@ -69,7 +113,14 @@ body {
 .markdown-content ul,
 .markdown-content ol {
   margin-bottom: 1rem;
-  padding-left: 1.5rem;
+  padding-left: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .markdown-content ul,
+  .markdown-content ol {
+    padding-left: 1.5rem;
+  }
 }
 
 .markdown-content li {
@@ -80,6 +131,7 @@ body {
 .markdown-content a {
   color: #60a5fa;
   text-decoration: underline;
+  word-break: break-all;
 }
 
 .markdown-content a:hover {
@@ -97,15 +149,29 @@ body {
   background: #1e293b;
   padding: 0.25rem 0.5rem;
   border-radius: 0.25rem;
-  font-size: 0.875rem;
+  font-size: 0.75rem;
+  word-break: break-all;
+}
+
+@media (min-width: 640px) {
+  .markdown-content code {
+    font-size: 0.875rem;
+  }
 }
 
 .markdown-content pre {
   background: #1e293b;
-  padding: 1rem;
+  padding: 0.75rem;
   border-radius: 0.5rem;
   overflow-x: auto;
   margin: 1rem 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (min-width: 640px) {
+  .markdown-content pre {
+    padding: 1rem;
+  }
 }
 
 .markdown-content pre code {
@@ -123,6 +189,7 @@ body {
 .table-wrapper {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  max-width: 100%;
 }
 
 /* 防止移动端文字溢出 */

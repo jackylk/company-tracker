@@ -92,26 +92,29 @@ export default function ResearchPage({ params }: { params: Promise<{ taskId: str
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div className="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
       {/* 顶部导航 */}
-      <div className="flex items-center gap-4 mb-6">
+      <div className="flex items-center gap-2 sm:gap-4 mb-4 sm:mb-6">
         <Link
           href="/tasks"
-          className="flex items-center gap-1 text-slate-400 hover:text-slate-200 transition-colors"
+          className="flex items-center gap-1 text-slate-400 hover:text-slate-200 transition-colors flex-shrink-0"
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
-          返回列表
+          <span className="hidden sm:inline">返回列表</span>
         </Link>
-        <div className="h-4 w-px bg-slate-700" />
-        <h1 className="text-lg font-semibold text-slate-100 truncate">
-          {task.companyName} - {task.focusPoints}
+        <div className="h-4 w-px bg-slate-700 flex-shrink-0" />
+        <h1 className="text-base sm:text-lg font-semibold text-slate-100 truncate min-w-0">
+          {task.companyName || '新建调研'}
+          {task.focusPoints && task.focusPoints !== '待填写' && (
+            <span className="hidden sm:inline text-slate-400"> - {task.focusPoints}</span>
+          )}
         </h1>
       </div>
 
       {/* 步骤条 */}
-      <div className="bg-slate-800/30 rounded-xl p-4 sm:p-6 mb-6">
+      <div className="bg-slate-800/30 rounded-xl p-3 sm:p-6 mb-4 sm:mb-6">
         <Stepper
           steps={STEPS}
           currentStep={task.currentStep}
@@ -121,7 +124,7 @@ export default function ResearchPage({ params }: { params: Promise<{ taskId: str
       </div>
 
       {/* 步骤内容 */}
-      <div className="bg-slate-800/30 rounded-xl p-4 sm:p-6">
+      <div className="bg-slate-800/30 rounded-xl p-3 sm:p-6">
         {task.currentStep === 1 && (
           <Step1Company task={task} onUpdate={updateTask} onNext={() => goToStep(2)} />
         )}

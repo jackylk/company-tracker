@@ -401,28 +401,28 @@ export default function Step2Sources({ taskId, task, onNext, onBack }: Step2Prop
       <div key={origin} className="border border-slate-700 rounded-lg overflow-hidden">
         {/* 分组头部 */}
         <div
-          className={`flex items-center justify-between px-4 py-3 ${config.bgColor} cursor-pointer hover:opacity-90 transition-opacity`}
+          className={`flex flex-col sm:flex-row sm:items-center justify-between px-3 sm:px-4 py-3 ${config.bgColor} cursor-pointer hover:opacity-90 transition-opacity gap-2`}
           onClick={() => toggleGroup(origin)}
         >
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <svg
-              className={`w-4 h-4 ${config.color} transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+              className={`w-4 h-4 ${config.color} transition-transform flex-shrink-0 ${isExpanded ? 'rotate-90' : ''}`}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
-            <span className={`font-medium ${config.color}`}>{config.label}</span>
-            <span className="text-sm text-slate-400">
-              ({selectedInGroup}/{group.length} 已选)
+            <span className={`font-medium ${config.color} text-sm sm:text-base`}>{config.label}</span>
+            <span className="text-xs sm:text-sm text-slate-400">
+              ({selectedInGroup}/{group.length})
             </span>
           </div>
-          <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-            <Button variant="ghost" size="sm" onClick={() => selectGroup(origin, true)} className="text-xs">
+          <div className="flex gap-2 ml-6 sm:ml-0" onClick={(e) => e.stopPropagation()}>
+            <Button variant="ghost" size="sm" onClick={() => selectGroup(origin, true)} className="text-xs px-2">
               全选
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => selectGroup(origin, false)} className="text-xs">
+            <Button variant="ghost" size="sm" onClick={() => selectGroup(origin, false)} className="text-xs px-2">
               取消
             </Button>
           </div>
@@ -624,14 +624,14 @@ export default function Step2Sources({ taskId, task, onNext, onBack }: Step2Prop
       )}
 
       {/* 操作按钮 */}
-      <div className="flex justify-between gap-3 pt-4 border-t border-slate-700">
-        <Button variant="secondary" onClick={onBack}>
+      <div className="flex flex-col-reverse sm:flex-row sm:justify-between gap-3 pt-4 border-t border-slate-700">
+        <Button variant="secondary" onClick={onBack} className="w-full sm:w-auto">
           <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
           上一步
         </Button>
-        <Button onClick={onNext} disabled={selectedCount === 0}>
+        <Button onClick={onNext} disabled={selectedCount === 0} className="w-full sm:w-auto">
           下一步：采集信息
           <svg className="w-4 h-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

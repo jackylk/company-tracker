@@ -17,7 +17,7 @@ interface CuratedSourceData {
 // 测试用户配置
 const TEST_USERS = [
   {
-    email: '1@test.com',
+    username: 'test',
     password: 'test',
     isAdmin: true, // 设为管理员方便调试
   },
@@ -28,11 +28,11 @@ async function createTestUsers() {
 
   for (const user of TEST_USERS) {
     const existingUser = await prisma.user.findUnique({
-      where: { email: user.email },
+      where: { username: user.username },
     });
 
     if (existingUser) {
-      console.log(`用户 ${user.email} 已存在，跳过`);
+      console.log(`用户 ${user.username} 已存在，跳过`);
       continue;
     }
 
@@ -40,13 +40,13 @@ async function createTestUsers() {
 
     await prisma.user.create({
       data: {
-        email: user.email,
+        username: user.username,
         passwordHash,
         isAdmin: user.isAdmin,
       },
     });
 
-    console.log(`已创建用户: ${user.email}`);
+    console.log(`已创建用户: ${user.username}`);
   }
 }
 
