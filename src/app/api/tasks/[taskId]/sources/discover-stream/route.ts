@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import prisma from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
 import { isValidUrl, normalizeUrl } from '@/lib/utils';
+import { initCuratedSources } from '@/lib/init-curated-sources';
 import type { SourceType, SourceOrigin } from '@/types';
 
 interface RouteParams {
@@ -271,6 +272,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         });
 
         send('stage', { stage: 'builtin', message: '正在从内置信息源中筛选...' });
+
+        // 确保内置信息源数据已初始化
+        await initCuratedSources();
 
         const curatedSources = await prisma.curatedSource.findMany();
         send('log', { message: `内置信息源库共 ${curatedSources.length} 条记录` });
