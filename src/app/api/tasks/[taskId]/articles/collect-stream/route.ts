@@ -3,11 +3,13 @@ import prisma from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
 import { extractSummary } from '@/lib/utils';
 import { CrawlerFactory } from '@/services/crawlers';
-import type { SourceType, CollectionStatus } from '@/types';
+import type { SourceType, CollectionStatus, DataSource } from '@/types';
+import pLimit from 'p-limit';
 
 // 采集超时时间（毫秒）
 const CRAWL_TIMEOUT = 15000; // 15秒
 const SLOW_THRESHOLD = 8000; // 超过8秒算慢
+const CONCURRENT_CRAWLS = 3; // 并发采集数
 
 interface RouteParams {
   params: Promise<{ taskId: string }>;
@@ -23,6 +25,14 @@ interface RawArticle {
   url: string;
   imageUrl: string | null;
   publishDate: Date | null;
+}
+
+interface CrawlResult {
+  source: DataSource;
+  articles: Awaited<ReturnType<typeof CrawlerFactory.crawl>>;
+  duration: number;
+  status: CollectionStatus;
+  error: string | null;
 }
 
 // 带超时的采集
@@ -45,6 +55,35 @@ async function crawlWithTimeout(
   return { articles, duration: Date.now() - startTime };
 }
 
+// 采集单个信息源
+async function crawlSource(source: DataSource): Promise<CrawlResult> {
+  try {
+    const { articles, duration } = await crawlWithTimeout(
+      source.type as SourceType,
+      source.url,
+      CRAWL_TIMEOUT
+    );
+
+    let status: CollectionStatus = 'success';
+    if (duration > SLOW_THRESHOLD) {
+      status = 'slow';
+    }
+    if (articles.length === 0) {
+      status = 'failed';
+    }
+
+    return { source, articles, duration, status, error: null };
+  } catch (error) {
+    return {
+      source,
+      articles: [],
+      duration: 0,
+      status: 'failed',
+      error: (error as Error).message,
+    };
+  }
+}
+
 // 流式采集文章
 export async function POST(request: NextRequest, { params }: RouteParams) {
   const encoder = new TextEncoder();
@@ -64,12 +103,21 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           return;
         }
 
-        // 验证任务归属
+        // 验证任务归属（只查询必要字段）
         const task = await prisma.researchTask.findFirst({
           where: { id: taskId, userId: payload.userId },
-          include: {
+          select: {
+            id: true,
+            companyName: true,
+            focusPoints: true,
             dataSources: {
               where: { selected: true },
+              select: {
+                id: true,
+                name: true,
+                url: true,
+                type: true,
+              },
             },
           },
         });
@@ -88,96 +136,107 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         const rawArticles: RawArticle[] = [];
         const seenUrls = new Set<string>();
 
-        // 1. 从选中的信息源采集
+        // 1. 并发采集所有信息源
         send('stage', { stage: 'datasource', message: '正在从信息源采集文章...' });
-        send('log', { message: `共有 ${task.dataSources.length} 个信息源待采集` });
+        send('log', { message: `共有 ${task.dataSources.length} 个信息源待采集（并发数: ${CONCURRENT_CRAWLS}）` });
 
-        let sourceIndex = 0;
-        for (const source of task.dataSources) {
-          sourceIndex++;
-          send('log', { message: `[${sourceIndex}/${task.dataSources.length}] 正在采集: ${source.name}` });
+        const limit = pLimit(CONCURRENT_CRAWLS);
+        let completedCount = 0;
+        const totalSources = task.dataSources.length;
 
-          let collectionStatus: CollectionStatus = 'success';
-          let errorMessage: string | null = null;
+        // 创建所有采集任务
+        const crawlPromises = task.dataSources.map((source) =>
+          limit(async () => {
+            const result = await crawlSource(source as DataSource);
+            completedCount++;
 
-          try {
-            const { articles, duration } = await crawlWithTimeout(
-              source.type as SourceType,
-              source.url,
-              CRAWL_TIMEOUT
-            );
+            // 发送进度
+            const progress = Math.round((completedCount / totalSources) * 50);
+            send('progress', { progress });
 
-            // 判断是否采集太慢
-            if (duration > SLOW_THRESHOLD) {
-              collectionStatus = 'slow';
-            }
-
-            if (articles.length === 0) {
-              // 没有采集到文章，标记为失败
-              collectionStatus = 'failed';
-              errorMessage = '未能获取到文章';
-              send('log', { message: `  └─ 从 ${source.name} 未获取到文章` });
+            // 发送日志
+            if (result.error) {
+              send('log', { message: `[${completedCount}/${totalSources}] ${source.name}: 采集失败 - ${result.error}` });
+            } else if (result.articles.length === 0) {
+              send('log', { message: `[${completedCount}/${totalSources}] ${source.name}: 未获取到文章` });
             } else {
-              for (const article of articles) {
-                if (seenUrls.has(article.url)) continue;
-                seenUrls.add(article.url);
-
-                const rawArticle: RawArticle = {
-                  taskId,
-                  sourceId: source.id,
-                  sourceName: source.name,
-                  title: article.title,
-                  content: article.content.substring(0, 50000),
-                  summary: article.summary || extractSummary(article.content),
-                  url: article.url,
-                  imageUrl: article.imageUrl || null,
-                  publishDate: article.publishDate || null,
-                };
-
-                rawArticles.push(rawArticle);
-
-                // 立即发送采集到的文章
-                send('article', {
-                  article: {
-                    title: rawArticle.title,
-                    summary: rawArticle.summary.substring(0, 100) + '...',
-                    url: rawArticle.url,
-                    sourceName: rawArticle.sourceName,
-                    publishDate: rawArticle.publishDate,
-                  },
-                  count: rawArticles.length,
-                });
-              }
-
-              const statusNote = collectionStatus === 'slow' ? ' (较慢)' : '';
-              send('log', { message: `  └─ 从 ${source.name} 获取了 ${articles.length} 篇文章${statusNote}` });
+              const statusNote = result.status === 'slow' ? ' (较慢)' : '';
+              send('log', { message: `[${completedCount}/${totalSources}] ${source.name}: 获取了 ${result.articles.length} 篇文章${statusNote}` });
             }
-          } catch (error) {
-            collectionStatus = 'failed';
-            errorMessage = (error as Error).message;
-            send('log', { message: `  └─ 采集失败: ${errorMessage}` });
-          }
 
-          // 更新信息源的采集状态（不中断主流程）
-          try {
-            await prisma.dataSource.update({
-              where: { id: source.id },
-              data: {
-                collectionStatus,
-                lastCollectionError: errorMessage,
+            return result;
+          })
+        );
+
+        // 等待所有采集完成
+        const results = await Promise.all(crawlPromises);
+
+        // 处理采集结果
+        const statusUpdates: Array<{
+          id: string;
+          status: CollectionStatus;
+          error: string | null;
+        }> = [];
+
+        for (const result of results) {
+          statusUpdates.push({
+            id: result.source.id,
+            status: result.status,
+            error: result.error,
+          });
+
+          for (const article of result.articles) {
+            if (seenUrls.has(article.url)) continue;
+            seenUrls.add(article.url);
+
+            const rawArticle: RawArticle = {
+              taskId,
+              sourceId: result.source.id,
+              sourceName: result.source.name,
+              title: article.title,
+              content: article.content.substring(0, 50000),
+              summary: article.summary || extractSummary(article.content),
+              url: article.url,
+              imageUrl: article.imageUrl || null,
+              publishDate: article.publishDate || null,
+            };
+
+            rawArticles.push(rawArticle);
+
+            // 发送采集到的文章
+            send('article', {
+              article: {
+                title: rawArticle.title,
+                summary: rawArticle.summary.substring(0, 100) + '...',
+                url: rawArticle.url,
+                sourceName: rawArticle.sourceName,
+                publishDate: rawArticle.publishDate,
               },
+              count: rawArticles.length,
             });
-          } catch (updateError) {
-            console.error('更新信息源状态失败:', updateError);
           }
         }
 
         send('progress', { progress: 60 });
         send('log', { message: `共采集到 ${rawArticles.length} 篇文章` });
 
+        // 2. 批量更新信息源状态
+        send('stage', { stage: 'update', message: '正在更新信息源状态...' });
+        await Promise.all(
+          statusUpdates.map((update) =>
+            prisma.dataSource.update({
+              where: { id: update.id },
+              data: {
+                collectionStatus: update.status,
+                lastCollectionError: update.error,
+              },
+            }).catch((err) => console.error('更新信息源状态失败:', err))
+          )
+        );
+
         send('progress', { progress: 80 });
 
-        // 3. 批量保存所有文章（全部标记为选中，让生成报告时AI判断相关性）
+        // 3. 批量保存所有文章
         send('stage', { stage: 'save', message: '正在保存文章...' });
 
         if (rawArticles.length > 0) {
@@ -192,7 +251,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
               imageUrl: a.imageUrl,
               publishDate: a.publishDate,
               sourceType: 'datasource',
-              selected: true, // 所有文章都标记为选中，由AI在生成报告时判断相关性
+              selected: true,
             })),
           });
         }
@@ -203,9 +262,19 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           data: { currentStep: 3 },
         });
 
-        // 5. 获取保存后的文章（带ID），按日期降序排列
+        // 5. 获取保存后的文章（带ID），只查询列表展示需要的字段
         const savedArticles = await prisma.article.findMany({
           where: { taskId },
+          select: {
+            id: true,
+            title: true,
+            summary: true,
+            url: true,
+            publishDate: true,
+            sourceType: true,
+            selected: true,
+            createdAt: true,
+          },
           orderBy: [
             { publishDate: 'desc' },
             { createdAt: 'desc' },

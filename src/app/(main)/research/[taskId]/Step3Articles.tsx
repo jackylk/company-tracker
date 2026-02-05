@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { api } from '@/lib/api';
@@ -23,6 +23,9 @@ interface CollectingArticle {
   publishDate: string | null;
 }
 
+// 批量更新配置
+const BATCH_UPDATE_INTERVAL = 200; // 每200ms批量更新一次
+
 export default function Step3Articles({ taskId, task, onNext, onBack }: Step3Props) {
   const router = useRouter();
   const [articles, setArticles] = useState<Article[]>([]);
@@ -36,13 +39,49 @@ export default function Step3Articles({ taskId, task, onNext, onBack }: Step3Pro
   const logsEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  // 批量更新缓冲区
+  const articleBufferRef = useRef<CollectingArticle[]>([]);
+  const logBufferRef = useRef<string[]>([]);
+  const batchTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // 批量刷新状态到React
+  const flushBatchUpdates = useCallback(() => {
+    if (articleBufferRef.current.length > 0) {
+      const newArticles = [...articleBufferRef.current];
+      articleBufferRef.current = [];
+      setCollectingArticles(prev => [...prev, ...newArticles]);
+    }
+    if (logBufferRef.current.length > 0) {
+      const newLogs = [...logBufferRef.current];
+      logBufferRef.current = [];
+      setLogs(prev => [...prev, ...newLogs]);
+    }
+  }, []);
+
+  // 启动批量更新定时器
+  const startBatchTimer = useCallback(() => {
+    if (!batchTimerRef.current) {
+      batchTimerRef.current = setInterval(flushBatchUpdates, BATCH_UPDATE_INTERVAL);
+    }
+  }, [flushBatchUpdates]);
+
+  // 停止批量更新定时器并刷新剩余数据
+  const stopBatchTimer = useCallback(() => {
+    if (batchTimerRef.current) {
+      clearInterval(batchTimerRef.current);
+      batchTimerRef.current = null;
+    }
+    flushBatchUpdates();
+  }, [flushBatchUpdates]);
+
   useEffect(() => {
     // 进入第三步时，先检查是否已有文章
     checkExistingArticles();
     return () => {
       abortControllerRef.current?.abort();
+      stopBatchTimer();
     };
-  }, [taskId]);
+  }, [taskId, stopBatchTimer]);
 
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -74,7 +113,14 @@ export default function Step3Articles({ taskId, task, onNext, onBack }: Step3Pro
     setProgress(0);
     setCurrentStage('');
 
+    // 清空缓冲区
+    articleBufferRef.current = [];
+    logBufferRef.current = [];
+
     abortControllerRef.current = new AbortController();
+
+    // 启动批量更新定时器
+    startBatchTimer();
 
     try {
       const response = await fetch(`/api/tasks/${taskId}/articles/collect-stream`, {
@@ -115,17 +161,21 @@ export default function Step3Articles({ taskId, task, onNext, onBack }: Step3Pro
                 setProgress(data.progress);
                 break;
               case 'log':
-                setLogs((prev) => [...prev, data.message]);
+                // 使用批量缓冲区
+                logBufferRef.current.push(data.message);
                 break;
               case 'article':
-                setCollectingArticles((prev) => [...prev, data.article]);
+                // 使用批量缓冲区
+                articleBufferRef.current.push(data.article);
                 break;
               case 'complete':
+                // 完成时先刷新缓冲区
+                stopBatchTimer();
                 setArticles(data.articles);
                 setLogs((prev) => [...prev, data.message]);
                 break;
               case 'error':
-                setLogs((prev) => [...prev, `错误: ${data.message}`]);
+                logBufferRef.current.push(`错误: ${data.message}`);
                 break;
             }
           } catch {
@@ -135,6 +185,7 @@ export default function Step3Articles({ taskId, task, onNext, onBack }: Step3Pro
       }
     } catch (err: unknown) {
       const error = err as Error;
+      stopBatchTimer();
       if (error.name === 'AbortError') {
         setLogs((prev) => [...prev, '采集已暂停']);
         setPaused(true);
@@ -142,6 +193,7 @@ export default function Step3Articles({ taskId, task, onNext, onBack }: Step3Pro
         setLogs((prev) => [...prev, `采集失败: ${error.message}`]);
       }
     } finally {
+      stopBatchTimer();
       setCollecting(false);
       // 重新加载文章确保数据同步
       const result: PaginatedResponse<Article> = await api.getArticles(taskId, { pageSize: 100 });

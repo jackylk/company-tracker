@@ -17,9 +17,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return apiError('未登录', 401);
     }
 
-    // 验证任务归属
+    // 验证任务归属（只查询必要字段）
     const task = await prisma.researchTask.findFirst({
       where: { id: taskId, userId: payload.userId },
+      select: { id: true },
     });
 
     if (!task) {
@@ -42,24 +43,35 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       where.sourceType = sourceType;
     }
 
-    // 获取总数
-    const total = await prisma.article.count({ where });
-
-    // 获取文章列表，按日期从近到远排序
-    const articles = await prisma.article.findMany({
-      where,
-      include: {
-        dataSource: {
-          select: { name: true },
+    // 并行执行计数和查询
+    const [total, articles] = await Promise.all([
+      prisma.article.count({ where }),
+      prisma.article.findMany({
+        where,
+        // 使用 select 代替 include，只查询需要的字段（不包含 content）
+        select: {
+          id: true,
+          title: true,
+          summary: true,
+          url: true,
+          imageUrl: true,
+          publishDate: true,
+          sourceType: true,
+          category: true,
+          selected: true,
+          createdAt: true,
+          dataSource: {
+            select: { name: true },
+          },
         },
-      },
-      orderBy: [
-        { publishDate: 'desc' },
-        { createdAt: 'desc' },
-      ],
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    });
+        orderBy: [
+          { publishDate: 'desc' },
+          { createdAt: 'desc' },
+        ],
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+    ]);
 
     return apiSuccess({
       data: articles,

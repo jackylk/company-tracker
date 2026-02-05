@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import { Button } from '@/components/ui/Button';
@@ -16,6 +16,9 @@ interface Step4Props {
   onBack: () => void;
   onReportGenerated?: () => void;
 }
+
+// 批量更新配置
+const TOKEN_BATCH_INTERVAL = 100; // 每100ms批量更新一次token
 
 export default function Step4Report({ taskId, task, onBack, onReportGenerated }: Step4Props) {
   const router = useRouter();
@@ -33,6 +36,35 @@ export default function Step4Report({ taskId, task, onBack, onReportGenerated }:
   const [logs, setLogs] = useState<string[]>([]);
   const contentContainerRef = useRef<HTMLDivElement>(null);
   const userScrolledRef = useRef(false);
+
+  // 批量更新缓冲区
+  const tokenBufferRef = useRef('');
+  const batchTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // 批量刷新token到React
+  const flushTokenBuffer = useCallback(() => {
+    if (tokenBufferRef.current) {
+      const tokens = tokenBufferRef.current;
+      tokenBufferRef.current = '';
+      setStreamContent(prev => prev + tokens);
+    }
+  }, []);
+
+  // 启动批量更新定时器
+  const startTokenBatchTimer = useCallback(() => {
+    if (!batchTimerRef.current) {
+      batchTimerRef.current = setInterval(flushTokenBuffer, TOKEN_BATCH_INTERVAL);
+    }
+  }, [flushTokenBuffer]);
+
+  // 停止批量更新定时器并刷新剩余数据
+  const stopTokenBatchTimer = useCallback(() => {
+    if (batchTimerRef.current) {
+      clearInterval(batchTimerRef.current);
+      batchTimerRef.current = null;
+    }
+    flushTokenBuffer();
+  }, [flushTokenBuffer]);
 
   useEffect(() => {
     loadData();
@@ -111,6 +143,12 @@ export default function Step4Report({ taskId, task, onBack, onReportGenerated }:
     setArticleInfo(null);
     userScrolledRef.current = false; // 重置滚动状态
 
+    // 清空缓冲区
+    tokenBufferRef.current = '';
+
+    // 启动批量更新定时器
+    startTokenBatchTimer();
+
     try {
       const response = await fetch(`/api/tasks/${taskId}/reports/generate-stream`, {
         method: 'POST',
@@ -165,9 +203,12 @@ export default function Step4Report({ taskId, task, onBack, onReportGenerated }:
                 setLogs((prev) => [...prev, data.message]);
                 break;
               case 'token':
-                setStreamContent((prev) => prev + data.token);
+                // 使用批量缓冲区
+                tokenBufferRef.current += data.token;
                 break;
               case 'complete':
+                // 完成时先刷新缓冲区
+                stopTokenBatchTimer();
                 // 更新报告列表并切换到查看视图
                 setReports((prev) => [data.report, ...prev]);
                 setShowTemplate(false);
@@ -186,8 +227,10 @@ export default function Step4Report({ taskId, task, onBack, onReportGenerated }:
       }
     } catch (err: unknown) {
       const error = err as Error;
+      stopTokenBatchTimer();
       setLogs((prev) => [...prev, `生成失败: ${error.message}`]);
     } finally {
+      stopTokenBatchTimer();
       setGenerating(false);
     }
   };
